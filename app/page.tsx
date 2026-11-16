@@ -32,7 +32,7 @@ export default function Home() {
             <p className="mt-5 max-w-xl text-lg leading-8 text-blue-100">Students run competing companies, make quarterly decisions and see the financial results instantly — ready for discussion in a single class period.</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/team/1" className="btn btn-accent px-6">Start the simulation</Link>
-              <Link href="/guide" className="btn border-white/30 bg-transparent px-6 text-white hover:bg-white/10">Teacher&apos;s guide</Link>
+              <Link href="/guide" className="btn border-white/30 bg-transparent px-6 text-white hover:bg-white/10">Guide</Link>
             </div>
           </div>
           <LeaguePreview />

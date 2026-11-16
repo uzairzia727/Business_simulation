@@ -38,7 +38,7 @@ export default function Reports() {
 
   return (
     <div className="wrap py-10">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="team-hide flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-brand-dark">Management reports</h1>
           <p className="mt-1 text-mute">All 8 companies, generated from each team&apos;s decisions (blank decisions are auto-filled from the team&apos;s role).</p>
@@ -49,7 +49,7 @@ export default function Reports() {
         </div>
       </div>
 
-      <section className="card mt-6" id="league">
+      <section className="card mt-6 team-hide" id="league">
         <h2 className="mb-3 font-semibold">League table — ranked by net profit</h2>
         <div className="overflow-x-auto">
           <table className="tbl">
@@ -70,7 +70,7 @@ export default function Reports() {
         </div>
       </section>
 
-      <section className="card mt-6" aria-labelledby="chart-h">
+      <section className="card mt-6 team-hide" aria-labelledby="chart-h">
         <h2 id="chart-h" className="font-semibold">Net profit by company</h2>
         <p className="sr-only">Bar chart of the league table above; highest is Team {league[0].i + 1}.</p>
         <div className="mt-4 grid gap-2" aria-hidden="true">
@@ -93,12 +93,13 @@ export default function Reports() {
           <h2 className="text-2xl font-bold">Team {idx + 1}: {ROLES[idx].name}</h2>
           <p className="text-sm text-mute">Year {t.year} · Quarter {t.quarter} · Simulation {t.simCode} · Group {t.groupNo}</p>
         </div>
-        <div className="no-print flex gap-2">
+        <div className="no-print flex flex-wrap gap-2">
           <label className="sr-only" htmlFor="pick">Company</label>
           <select id="pick" className="input w-auto" value={idx} onChange={(e) => pick(Number(e.target.value))}>
             {ROLES.map((R, i) => <option key={i} value={i}>Team {i + 1}: {R.name}</option>)}
           </select>
           <Link className="btn" href={`/team/${idx + 1}`}>Edit decisions</Link>
+          <button className="btn btn-primary" onClick={() => { document.body.classList.add("print-team"); window.print(); document.body.classList.remove("print-team"); }}>Save as PDF</button>
         </div>
       </div>
 

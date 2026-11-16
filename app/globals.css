@@ -32,3 +32,5 @@ body { background: var(--color-paper); color: var(--color-ink); }
   body { background: #fff; }
   .card { box-shadow: none; break-inside: avoid; }
 }
+
+@media print { .print-team .team-hide { display: none !important; } }

@@ -126,3 +126,24 @@ dialog::backdrop{background:rgba(15,23,42,.45)}
   body{background:#fff;display:block}
 }
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+
+/* Teams dropdown */
+.nav-dd{position:relative}
+.nav-dd summary{list-style:none;color:#DBEAFE;padding:10px 14px;border-radius:8px;min-height:44px;display:flex;align-items:center;gap:8px;cursor:pointer}
+.nav-dd summary::-webkit-details-marker{display:none}
+.nav-dd summary::after{content:"";width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-2px);transition:transform .2s}
+.nav-dd[open] summary::after{transform:rotate(-135deg)}
+.nav-dd summary:hover,.nav-dd summary:focus-visible{background:rgba(255,255,255,.1);outline:2px solid #93C5FD}
+.dd-menu{position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:6px;min-width:260px;display:grid;z-index:60}
+.site-nav .dd-menu a{color:var(--fg);padding:8px 12px;border-radius:8px;display:flex;flex-direction:column;align-items:flex-start;outline:none;min-height:44px}
+.site-nav .dd-menu a:hover,.site-nav .dd-menu a:focus-visible{background:var(--muted);outline:none}
+.dd-menu small{color:var(--muted-fg);font-size:12px}
+@media (max-width:1024px){.dd-menu{position:static;box-shadow:none;margin:4px 0;grid-template-columns:1fr 1fr}}
+@media (max-width:480px){.dd-menu{grid-template-columns:1fr}}
+/* Strategist roles */
+.role-card{position:relative;padding-top:56px;transition:transform .2s,border-color .2s}
+.role-card:hover{transform:translateY(-2px);border-color:var(--primary)}
+.role-no{position:absolute;top:16px;left:18px;width:28px;height:28px;border-radius:8px;background:var(--primary);color:#fff;font-weight:700;font-size:14px;display:grid;place-items:center}
+#league:empty{display:none}
+@media (max-width:1024px){.grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.grid-4{grid-template-columns:1fr}}

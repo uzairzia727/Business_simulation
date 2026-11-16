@@ -71,6 +71,39 @@ const OPEN = {
   bom: [1, 1.65, 3.3], mhrs: [0.35, 0.62, 1.25]
 };
 
+// 8 strategist roles, one per team. "set" overrides the benchmark FIELDS; "mix" scales Export/South/West/North volumes.
+const ROLES = [
+  {name:"Cost Leader", focus:"Lowest prices, lean overheads, high volume.", set:{p1export:150,p1home:132,p2export:262,p2home:245,p3export:530,p3home:505,p1advert:6,p2advert:7,p3advert:10,p1merch:4,p2merch:4,p3merch:5,research1:5,research2:5,research3:5,budget:95,supplier:1,shift:3,major3:0}, mix:[1.15,1.3,1.3,1.2]},
+  {name:"Premium Differentiator", focus:"High prices justified by quality and product improvements.", set:{p1export:195,p1home:178,p2export:330,p2home:310,p3export:650,p3home:620,major1:1,major2:1,major3:1,research1:25,research2:25,research3:30,trainSales:2}, mix:[0.85,0.85,0.85,0.85]},
+  {name:"Export Expansionist", focus:"Wins overseas: export sales force and export volume.", set:{exportSales:18,southSales:1,westSales:1,northSales:1,p1export:165,p2export:280,p3export:565,deliveries:8,recruitSales:3}, mix:[1.35,0.6,0.6,0.6]},
+  {name:"Home-Market Specialist", focus:"Dominates South, West and North with regional coverage.", set:{exportSales:7,southSales:5,westSales:5,northSales:5,p1home:145,p2home:262,p3home:540,vansBuy:2}, mix:[0.6,2.5,3,1.6]},
+  {name:"Innovation Leader", focus:"Heavy R&D and major improvements to lead future demand.", set:{research1:35,research2:35,research3:40,major1:1,major2:1,major3:1,p3export:600,p3home:575,trainWorkers:3}, mix:[0.95,1,1,1]},
+  {name:"Marketing Aggressor", focus:"Big advertising, trade press and merchandising push.", set:{p1advert:25,p2advert:28,p3advert:40,p1trade:18,p2trade:18,p3trade:30,p1merch:15,p2merch:15,p3merch:20,commission:3}, mix:[1.2,1.25,1.25,1.2]},
+  {name:"Operations Optimiser", focus:"Machines, training and shorter assembly times.", set:{machinesOrder:2,maintenance:90,trainWorkers:5,p1time:105,p2time:150,p3time:300,shift:3,recruitWorkers:6,rawUnits:14000}, mix:[1.1,1.1,1.1,1.1]},
+  {name:"Financial Conservative", focus:"Protects cash: tight credit, low dividends, no capex.", set:{credit:20,dividend:2,machinesOrder:0,vansBuy:0,budget:100,rawUnits:9000,p1advert:9,p2advert:10,p3advert:15}, mix:[0.9,0.9,0.9,0.9]}
+];
+const BASE_QTY = {Export:[2800,1400,600], South:[200,200,100], West:[100,75,75], North:[600,350,125]};
+function roleData(i){
+  const R = ROLES[i], d = {};
+  FIELDS.forEach(f => d[f[0]] = f[3]);
+  Object.assign(d, R.set);
+  REGION_ROWS.forEach((r, ri) => BASE_QTY[r[0]].forEach((v, k) => d[r[k + 1]] = Math.round(v * R.mix[ri])));
+  Object.keys(d).forEach(k => d[k] = String(d[k]));
+  return d;
+}
+function autofillTeam(i){
+  const t = teams[i], rd = roleData(i);
+  allFieldIds().forEach(id => { if (isBlank(t.d[id])) t.d[id] = rd[id]; });
+  t.year = t.year || "2026"; t.quarter = t.quarter || "1"; t.simCode = t.simCode || "TV-2026";
+  t.groupNo = t.groupNo || "1"; t.statusNo = t.statusNo || "2";
+  t.companyNo = t.companyNo || String(i + 1); t.identityNo = t.identityNo || String(i + 1);
+}
+function generateAll(){
+  const keep = idx;
+  for (let i = 0; i < TEAMS; i++){ autofillTeam(i); idx = i; teams[i].report = calculate(teams[i].d); teams[i].savedAt = new Date().toISOString(); }
+  idx = keep; persist();
+}
+
 const $ = id => document.getElementById(id);
 const page = document.body.dataset.page || "home";
 let idx = 0, loading = false, saveTimer = 0;
@@ -127,7 +160,7 @@ function buildForm(){
 function fillTeamSelect(){
   document.querySelectorAll("[data-team-select]").forEach(sel => {
     sel.innerHTML = Array.from({length: TEAMS}, (_, i) =>
-      `<option value="${i}">Team ${i + 1} / Company ${i + 1}</option>`).join("");
+      `<option value="${i}">Team ${i + 1}: ${ROLES[i].name}</option>`).join("");
     sel.value = String(idx);
   });
 }
@@ -305,10 +338,13 @@ function block(title, html){ return `<div class="report-block"><h3>${title}</h3>
 function renderReport(){
   const area = $("reportArea");
   if (!area) return;
+  if (teams.some(x => !x.report)) generateAll();
   const t = teams[idx];
-  if (!t.report){
-    area.innerHTML = `<p class="muted">No report generated for Team ${idx + 1} yet. Open <a href="decision.html">Decisions</a>, complete the form, then generate the report.</p>`;
-    return;
+  if ($("league")) {
+    const rows = teams.map((x, i) => ({i, r: x.report})).sort((a, b) => b.r.net - a.r.net);
+    $("league").innerHTML = block("League table: all 8 companies ranked by net profit", table(["Rank","Team","Strategist role","Revenue","Gross profit","Net profit","Closing cash"],
+      rows.map((o, k) => [k + 1, `<a href="#" data-pick="${o.i}">Team ${o.i + 1}</a>`, ROLES[o.i].name, gbp(o.r.revenue), gbp(o.r.gross), gbp(o.r.net), gbp(o.r.cashShown - o.r.overdraft)])));
+    $("league").querySelectorAll("[data-pick]").forEach(a => a.onclick = e => { e.preventDefault(); loadTeam(Number(a.dataset.pick)); area.scrollIntoView(); });
   }
   const r = t.report, d = r.d;
   const productRows = [
@@ -324,7 +360,7 @@ function renderReport(){
   area.innerHTML = `
     <div class="report-title">
       <h2>THE TOPAZ MANAGEMENT SIMULATION REPORT</h2>
-      <p><strong>Team ${idx + 1}</strong> &nbsp; Company ${t.companyNo || idx + 1} &nbsp; Group ${t.groupNo || "—"} &nbsp; Identity ${t.identityNo || "—"} &nbsp; Status ${t.statusNo || "—"}</p>
+      <p><strong>Team ${idx + 1}: ${ROLES[idx].name}</strong> &nbsp; Company ${t.companyNo || idx + 1} &nbsp; Group ${t.groupNo || "—"} &nbsp; Identity ${t.identityNo || "—"} &nbsp; Status ${t.statusNo || "—"}</p>
       <p>Year ${t.year || "—"} &nbsp; Quarter ${t.quarter || "—"} &nbsp; Simulation ${t.simCode || "—"}</p>
       <p class="muted">Educational estimate from this team’s decisions. Not the original Topaz-Vbe engine.</p>
     </div>
@@ -408,16 +444,13 @@ function fillSample(){
   $("companyNo").value = $("companyNo").value || String(idx + 1);
   $("identityNo").value = $("identityNo").value || String(idx + 1);
   if (isBlank($("statusNo").value)) $("statusNo").value = "2";
-  FIELDS.forEach(f => { if ($(f[0])) $(f[0]).value = String(f[3]); });
-  REGION_ROWS.forEach(r => {
-    const samples = {Export:[2800,1400,600], South:[200,200,100], West:[100,75,75], North:[600,350,125]};
-    samples[r[0]].forEach((v, i) => { $(r[i + 1]).value = String(v); });
-  });
+  const rd = roleData(idx);
+  allFieldIds().forEach(id => { if ($(id)) $(id).value = rd[id]; });
   loading = false;
   clearValidation();
   readForm(); persist();
   if ($("status")) $("status").textContent = "Sample / benchmark data loaded";
-  toast("Benchmark data filled for Team " + (idx + 1));
+  toast(ROLES[idx].name + " strategy filled for Team " + (idx + 1));
 }
 function generateReport(){
   readForm();
@@ -429,14 +462,10 @@ function generateReport(){
   window.location.href = "report.html";
 }
 function renderHome(){
-  const grid = $("companyGrid");
+  const grid = $("roleGrid");
   if (!grid) return;
-  grid.innerHTML = teams.map((t, i) => `
-    <button type="button" class="company-card" data-open-team="${i}">
-      <strong>Team ${i + 1}</strong>
-      <small>Company ${t.companyNo || i + 1}</small>
-      <span class="badge ${t.report ? "" : "off"}">${t.report ? "Report ready" : "No report"}</span>
-    </button>`).join("");
+  grid.innerHTML = ROLES.map((R, i) => `
+    <article class="card role-card"><span class="role-no">${i + 1}</span><h3>${R.name}</h3><p>${R.focus}</p></article>`).join("");
 }
 function selfCheck(){
   const sample = {};
@@ -447,6 +476,8 @@ function selfCheck(){
 }
 
 restore();
+const qTeam = Number(new URLSearchParams(location.search).get("team"));
+if (qTeam >= 1 && qTeam <= TEAMS) idx = qTeam - 1;
 selfCheck();
 buildForm();
 fillTeamSelect();
@@ -454,6 +485,16 @@ if (hasForm()) loadTeam(idx);
 else if (page === "report") renderReport();
 else if (page === "home") renderHome();
 
+if ($("siteNav")) {
+  const dec = $("siteNav").querySelector('a[href="decision.html"]');
+  const dd = document.createElement("details");
+  dd.className = "nav-dd";
+  dd.innerHTML = `<summary>Teams</summary><div class="dd-menu">${ROLES.map((R, i) =>
+    `<a href="decision.html?team=${i + 1}"><strong>Team ${i + 1}</strong><small>${R.name}</small></a>`).join("")}</div>`;
+  dec.after(dd);
+  document.addEventListener("click", e => { if (!dd.contains(e.target)) dd.open = false; });
+}
+if ($("allBtn")) $("allBtn").onclick = () => { if (hasForm()) readForm(); generateAll(); window.location.href = "report.html#league"; };
 const navToggle = $("navToggle");
 const siteNav = $("siteNav");
 if (navToggle && siteNav) {
@@ -489,7 +530,4 @@ document.addEventListener("input", e => {
   e.target.classList.remove("invalid");
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => { readForm(); persist(); if ($("status")) $("status").textContent = "Auto-saved"; }, 250);
-});
-document.querySelectorAll("[data-open-team]").forEach(btn => {
-  btn.onclick = () => { idx = Number(btn.dataset.openTeam); persist(); window.location.href = "decision.html"; };
 });

@@ -27,7 +27,7 @@ export default function Reports() {
   const { teams, ready, generateAll } = useTeams();
   const idx = Math.min(7, Math.max(0, Number(sp.get("team") || 1) - 1));
 
-  // Teacher view: any company without a report is auto-filled from its role and calculated.
+  // Any company without a report is auto-filled from its role and calculated.
   useEffect(() => { if (ready && teams.some((t) => !t.report)) generateAll(teams); }, [ready, teams, generateAll]);
 
   if (!ready || teams.some((t) => !t.report)) return <div className="wrap py-12 text-mute">Generating reports…</div>;
@@ -162,7 +162,7 @@ export default function Reports() {
             </Block>
           </div>
         </div>
-        <p className="text-xs text-mute">Educational estimate calculated from the team&apos;s decisions; not a commercial simulation engine.</p>
+        <p className="text-xs text-mute">Simulated estimate calculated from the team&apos;s decisions; not a commercial simulation engine.</p>
       </div>
     </div>
   );

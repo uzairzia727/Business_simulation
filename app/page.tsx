@@ -5,10 +5,10 @@ import LeaguePreview from "@/components/LeaguePreview";
 
 const STATS = [["8", "Competing companies"], ["8", "Strategist roles"], ["3", "Products"], ["4", "Markets"]];
 const STEPS = [
-  ["Pick a team", "Each group takes one company from the Teams menu and its strategist role."],
-  ["Decide", "Forms arrive pre-filled from the role. Teams adjust prices, people, production and finance."],
-  ["Generate", "One click produces P&L, balance sheet, cash flow and resource reports for all 8."],
-  ["Debate", "Compare the league table and discuss why one strategy beat another."],
+  ["Pick a team", "Take charge of one of eight companies, each led by a distinct strategist role."],
+  ["Decide", "Start from the role's baseline plan and refine pricing, staffing, production and finance."],
+  ["Report", "Generate profit and loss, balance sheet, cash flow and resource reports for every company."],
+  ["Benchmark", "Compare performance on the league table and identify which strategy created the most value."],
 ];
 const AREAS = [
   ["Marketing", "Prices, advertising, trade press, merchandising and product improvements."],
@@ -25,11 +25,11 @@ export default function Home() {
         <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.05)_1px,transparent_1px)] bg-[size:48px_48px]" />
         <div className="wrap relative grid items-center gap-12 py-16 sm:py-24 lg:grid-cols-[1.2fr_1fr]">
           <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-amber-300">Classroom business simulation</p>
+            <p className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-amber-300">Strategic management simulation</p>
             <h1 className="mt-5 text-4xl font-extrabold leading-[1.1] text-balance sm:text-6xl">
-              Eight strategies. <span className="bg-gradient-to-r from-amber-300 to-orange-400 bg-clip-text text-transparent">One winner.</span>
+              Compete on strategy. <span className="bg-gradient-to-r from-amber-300 to-orange-400 bg-clip-text text-transparent">Win on results.</span>
             </h1>
-            <p className="mt-5 max-w-xl text-lg leading-8 text-blue-100">Students run competing companies, make quarterly decisions and see the financial results instantly — ready for discussion in a single class period.</p>
+            <p className="mt-5 max-w-xl text-lg leading-8 text-blue-100">Lead one of eight competing companies, set quarterly strategy across marketing, operations, people and finance, and measure the impact through full management accounts.</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/team/1" className="btn btn-accent px-6">Start the simulation</Link>
               <Link href="/guide" className="btn border-white/30 bg-transparent px-6 text-white hover:bg-white/10">Guide</Link>
@@ -47,8 +47,8 @@ export default function Home() {
       </section>
 
       <section className="wrap py-16">
-        <p className="text-sm font-semibold uppercase tracking-widest text-brand">How a round works</p>
-        <h2 className="mt-2 text-3xl font-bold text-brand-dark">From decision to debrief in four steps</h2>
+        <p className="text-sm font-semibold uppercase tracking-widest text-brand">How each quarter works</p>
+        <h2 className="mt-2 text-3xl font-bold text-brand-dark">From strategy to results in four steps</h2>
         <ol className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {STEPS.map(([t, d], i) => (
             <li key={t} className="relative">
@@ -64,7 +64,7 @@ export default function Home() {
         <div className="wrap">
           <p className="text-sm font-semibold uppercase tracking-widest text-brand">Meet the strategists</p>
           <h2 className="mt-2 text-3xl font-bold text-brand-dark">The 8 strategist roles</h2>
-          <p className="mt-3 max-w-2xl text-mute">Every company plays a different textbook strategy, so the results show students how positioning choices play out against each other.</p>
+          <p className="mt-3 max-w-2xl text-mute">Each company pursues a distinct competitive strategy, revealing how positioning choices perform head to head.</p>
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {ROLES.map((r, i) => (
               <Link key={r.name} href={`/team/${i + 1}`} className="group card flex flex-col transition hover:-translate-y-1 hover:border-brand hover:shadow-lg">
@@ -93,8 +93,8 @@ export default function Home() {
         </div>
         <div className="mt-14 flex flex-col items-start justify-between gap-6 rounded-3xl bg-gradient-to-r from-brand to-teal-600 p-8 text-white sm:flex-row sm:items-center">
           <div>
-            <h2 className="text-2xl font-bold">Ready for class?</h2>
-            <p className="mt-1 text-blue-100">All 8 reports are generated automatically — no data entry needed to begin.</p>
+            <h2 className="text-2xl font-bold">See where every company stands</h2>
+            <p className="mt-1 text-blue-100">Reports for all eight companies are generated automatically from their current decisions.</p>
           </div>
           <Link href="/reports" className="btn btn-accent px-6">Open the league table</Link>
         </div>

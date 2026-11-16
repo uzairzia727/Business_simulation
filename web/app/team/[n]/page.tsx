@@ -6,7 +6,7 @@ export const generateStaticParams = () => Array.from({ length: TEAMS }, (_, i) =
 
 export async function generateMetadata({ params }: { params: Promise<{ n: string }> }) {
   const { n } = await params;
-  return { title: `Team ${n}: ${ROLES[Number(n) - 1]?.name ?? ""} | Topaz-Vbe` };
+  return { title: `Team ${n}: ${ROLES[Number(n) - 1]?.name ?? ""} | StrataSim` };
 }
 
 export default async function TeamPage({ params }: { params: Promise<{ n: string }> }) {

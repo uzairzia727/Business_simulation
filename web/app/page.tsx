@@ -1,53 +1,102 @@
 import Link from "next/link";
 import { ROLES } from "@/lib/sim";
+import RoleIcon from "@/components/RoleIcon";
+import LeaguePreview from "@/components/LeaguePreview";
 
+const STATS = [["8", "Competing companies"], ["8", "Strategist roles"], ["3", "Products"], ["4", "Markets"]];
+const STEPS = [
+  ["Pick a team", "Each group takes one company from the Teams menu and its strategist role."],
+  ["Decide", "Forms arrive pre-filled from the role. Teams adjust prices, people, production and finance."],
+  ["Generate", "One click produces P&L, balance sheet, cash flow and resource reports for all 8."],
+  ["Debate", "Compare the league table and discuss why one strategy beat another."],
+];
 const AREAS = [
-  ["Marketing", "Prices, advertising, trade press, merchandising and major product improvements for P1–P3."],
-  ["Operations", "Sales coverage, research, materials, suppliers, machines, maintenance and deliveries."],
-  ["Personnel", "Recruit, dismiss and train sales and assembly staff; set wages, shifts and commission."],
-  ["Finance", "Credit policy, dividends, van fleet, management budget and the published accounts."],
+  ["Marketing", "Prices, advertising, trade press, merchandising and product improvements."],
+  ["Operations", "Sales coverage, research, materials, machines, maintenance and deliveries."],
+  ["Personnel", "Recruit, dismiss and train staff; set wages, shifts and commission."],
+  ["Finance", "Credit policy, dividends, van fleet, management budget and accounts."],
 ];
 
 export default function Home() {
   return (
     <>
-      <section className="bg-gradient-to-br from-brand-dark via-brand to-teal-700 py-16 text-white sm:py-20">
+      <section className="relative overflow-hidden bg-brand-dark text-white">
+        <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(59,130,246,.45),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(20,184,166,.35),transparent_50%)]" />
+        <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.05)_1px,transparent_1px)] bg-[size:48px_48px]" />
+        <div className="wrap relative grid items-center gap-12 py-16 sm:py-24 lg:grid-cols-[1.2fr_1fr]">
+          <div>
+            <p className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-amber-300">Classroom business simulation</p>
+            <h1 className="mt-5 text-4xl font-extrabold leading-[1.1] text-balance sm:text-6xl">
+              Eight strategies. <span className="bg-gradient-to-r from-amber-300 to-orange-400 bg-clip-text text-transparent">One winner.</span>
+            </h1>
+            <p className="mt-5 max-w-xl text-lg leading-8 text-blue-100">Students run competing companies, make quarterly decisions and see the financial results instantly — ready for discussion in a single class period.</p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/team/1" className="btn btn-accent px-6">Start the simulation</Link>
+              <Link href="/guide" className="btn border-white/30 bg-transparent px-6 text-white hover:bg-white/10">Teacher&apos;s guide</Link>
+            </div>
+          </div>
+          <LeaguePreview />
+        </div>
+        <div className="relative border-t border-white/10 bg-white/5">
+          <dl className="wrap grid grid-cols-2 gap-6 py-6 sm:grid-cols-4">
+            {STATS.map(([v, l]) => (
+              <div key={l}><dt className="sr-only">{l}</dt><dd className="text-3xl font-extrabold">{v}</dd><dd className="text-sm text-blue-200">{l}</dd></div>
+            ))}
+          </dl>
+        </div>
+      </section>
+
+      <section className="wrap py-16">
+        <p className="text-sm font-semibold uppercase tracking-widest text-brand">How a round works</p>
+        <h2 className="mt-2 text-3xl font-bold text-brand-dark">From decision to debrief in four steps</h2>
+        <ol className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {STEPS.map(([t, d], i) => (
+            <li key={t} className="relative">
+              <span className="grid size-10 place-items-center rounded-full bg-brand text-sm font-bold text-white ring-8 ring-blue-50">{i + 1}</span>
+              <h3 className="mt-4 font-semibold">{t}</h3>
+              <p className="mt-1 text-sm leading-6 text-mute">{d}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className="border-y border-line bg-white py-16">
         <div className="wrap">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-amber-300">Team decision &amp; management simulation</p>
-          <h1 className="max-w-3xl text-4xl font-bold leading-tight text-balance sm:text-5xl">Eight companies. Eight strategies. One market.</h1>
-          <p className="mt-4 max-w-2xl text-lg text-blue-100">Each team runs a company with its own strategist role, makes quarterly decisions across three products and four markets, and competes on the league table.</p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/reports" className="btn btn-accent">View league table</Link>
-            <Link href="/guide" className="btn border-white/40 bg-transparent text-white hover:bg-white/10">How it works</Link>
+          <p className="text-sm font-semibold uppercase tracking-widest text-brand">Meet the strategists</p>
+          <h2 className="mt-2 text-3xl font-bold text-brand-dark">The 8 strategist roles</h2>
+          <p className="mt-3 max-w-2xl text-mute">Every company plays a different textbook strategy, so the results show students how positioning choices play out against each other.</p>
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {ROLES.map((r, i) => (
+              <Link key={r.name} href={`/team/${i + 1}`} className="group card flex flex-col transition hover:-translate-y-1 hover:border-brand hover:shadow-lg">
+                <div className="flex items-center justify-between">
+                  <RoleIcon i={i} />
+                  <span className="text-xs font-semibold text-mute">Team {i + 1}</span>
+                </div>
+                <h3 className="mt-4 font-semibold">{r.name}</h3>
+                <p className="mt-1 flex-1 text-sm leading-6 text-mute">{r.focus}</p>
+                <span className="mt-4 text-sm font-semibold text-brand group-hover:underline">Open decisions →</span>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="wrap py-14">
-        <h2 className="text-2xl font-bold text-brand-dark">The 8 strategist roles</h2>
-        <p className="mt-2 max-w-3xl text-mute">Every company plays a different business strategy. Decisions and reports are pre-filled from each role, so the class can compare strategies straight away — then teams adjust and re-run. Open a team from the <strong>Teams</strong> menu.</p>
+      <section className="wrap py-16">
+        <h2 className="text-3xl font-bold text-brand-dark">What every team manages</h2>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {ROLES.map((r, i) => (
-            <article key={r.name} className="card transition hover:-translate-y-0.5 hover:border-brand">
-              <span className="grid size-8 place-items-center rounded-lg bg-brand text-sm font-bold text-white">{i + 1}</span>
-              <h3 className="mt-4 font-semibold">{r.name}</h3>
-              <p className="mt-1 text-sm text-mute">{r.focus}</p>
+          {AREAS.map(([t, d]) => (
+            <article key={t} className="rounded-2xl border-l-4 border-brand bg-white p-5 shadow-sm">
+              <h3 className="font-semibold">{t}</h3>
+              <p className="mt-1 text-sm leading-6 text-mute">{d}</p>
             </article>
           ))}
         </div>
-      </section>
-
-      <section className="border-t border-line bg-white py-14">
-        <div className="wrap">
-          <h2 className="text-2xl font-bold text-brand-dark">What you manage each quarter</h2>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {AREAS.map(([t, d]) => (
-              <article key={t} className="rounded-2xl border border-line p-5">
-                <h3 className="font-semibold">{t}</h3>
-                <p className="mt-1 text-sm text-mute">{d}</p>
-              </article>
-            ))}
+        <div className="mt-14 flex flex-col items-start justify-between gap-6 rounded-3xl bg-gradient-to-r from-brand to-teal-600 p-8 text-white sm:flex-row sm:items-center">
+          <div>
+            <h2 className="text-2xl font-bold">Ready for class?</h2>
+            <p className="mt-1 text-blue-100">All 8 reports are generated automatically — no data entry needed to begin.</p>
           </div>
+          <Link href="/reports" className="btn btn-accent px-6">Open the league table</Link>
         </div>
       </section>
     </>

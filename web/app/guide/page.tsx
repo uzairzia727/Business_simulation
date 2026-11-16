@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export const metadata = { title: "Guide | Topaz-Vbe" };
+export const metadata = { title: "Guide | StrataSim" };
 
 export default function Guide() {
   return (
@@ -15,7 +15,7 @@ export default function Guide() {
       <p>Revenue = units × regional price. Cost of sales = materials + direct labour + production overheads. Gross profit = revenue − cost of sales. Net profit is after selling costs, administration, interest and tax.</p>
       <h2>FAQs</h2>
       <p><strong>Where is data stored?</strong> In this browser (localStorage). Use one device for the class, or print reports to PDF.</p>
-      <p><strong>Is this the official Topaz engine?</strong> No — it is an educational estimate built from the decision inputs.</p>
+      <p><strong>Is this a commercial simulation engine?</strong> No — it is an educational estimate built from the decision inputs.</p>
       <p><Link href="/team/1" className="btn btn-primary mt-4">Open Team 1</Link></p>
     </div>
   );

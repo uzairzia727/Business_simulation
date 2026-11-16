@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { OPEN, REGION_ROWS, ROLES, fmt, gbp } from "@/lib/sim";
 import { useTeams } from "@/lib/store";
+import RoleIcon, { ROLE_BAR } from "./RoleIcon";
 
 type Cell = string | number;
 function Table({ head, rows }: { head: string[]; rows: Cell[][] }) {
@@ -57,8 +58,8 @@ export default function Reports() {
               {league.map(({ i, r: x }, k) => (
                 <tr key={i} onClick={() => pick(i)} className={`cursor-pointer hover:bg-slate-50 ${i === idx ? "bg-blue-50" : ""}`}>
                   <td><span className={`inline-grid size-7 place-items-center rounded-full text-xs font-bold ${k === 0 ? "bg-accent text-ink" : "bg-slate-100"}`}>{k + 1}</span></td>
-                  <td className="!text-left"><button className="text-left font-semibold text-brand hover:underline" onClick={() => pick(i)}>Team {i + 1}</button>
-                    <span className="block text-xs text-mute">{ROLES[i].name}</span></td>
+                  <td className="!text-left"><div className="flex items-center gap-3"><RoleIcon i={i} size="size-9" /><div><button className="text-left font-semibold text-brand hover:underline" onClick={() => pick(i)}>Team {i + 1}</button>
+                    <span className="block text-xs text-mute">{ROLES[i].name}</span></div></div></td>
                   <td>{gbp(x.revenue)}</td><td>{gbp(x.gross)}</td>
                   <td className={`font-semibold ${x.net < 0 ? "text-red-700" : "text-emerald-700"}`}>{gbp(x.net)}</td>
                   <td>{gbp(x.cashShown - x.overdraft)}</td>
@@ -69,9 +70,26 @@ export default function Reports() {
         </div>
       </section>
 
+      <section className="card mt-6" aria-labelledby="chart-h">
+        <h2 id="chart-h" className="font-semibold">Net profit by company</h2>
+        <p className="sr-only">Bar chart of the league table above; highest is Team {league[0].i + 1}.</p>
+        <div className="mt-4 grid gap-2" aria-hidden="true">
+          {league.map(({ i, r: x }) => {
+            const max = Math.max(...league.map((o) => Math.abs(o.r.net))) || 1;
+            return (
+              <button key={i} onClick={() => pick(i)} className="grid grid-cols-[6.5rem_1fr_auto] items-center gap-3 text-left text-sm" tabIndex={-1}>
+                <span className="truncate font-medium">Team {i + 1}</span>
+                <span className="h-6 rounded-md bg-slate-100"><span className={`block h-full rounded-md ${ROLE_BAR[i]} transition-[width] duration-500`} style={{ width: `${Math.max(2, (Math.abs(x.net) / max) * 100)}%` }} /></span>
+                <span className="w-28 text-right font-semibold tabular-nums">{gbp(x.net)}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
       <div className="mt-10 flex flex-wrap items-end justify-between gap-4 border-b border-line pb-4">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wider text-brand">The Topaz management simulation report</p>
+          <p className="text-sm font-semibold uppercase tracking-wider text-brand">StrataSim management report</p>
           <h2 className="text-2xl font-bold">Team {idx + 1}: {ROLES[idx].name}</h2>
           <p className="text-sm text-mute">Year {t.year} · Quarter {t.quarter} · Simulation {t.simCode} · Group {t.groupNo}</p>
         </div>
@@ -144,7 +162,7 @@ export default function Reports() {
             </Block>
           </div>
         </div>
-        <p className="text-xs text-mute">Educational estimate calculated from the team&apos;s decisions; not the proprietary Topaz-Vbe engine.</p>
+        <p className="text-xs text-mute">Educational estimate calculated from the team&apos;s decisions; not a commercial simulation engine.</p>
       </div>
     </div>
   );

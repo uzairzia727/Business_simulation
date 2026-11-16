@@ -27,9 +27,9 @@ export default function Header() {
     <header className="sticky top-0 z-40 border-b border-white/10 bg-brand-dark/95 backdrop-blur">
       <div className="wrap flex min-h-16 flex-wrap items-center justify-between gap-2 py-2">
         <Link href="/" className="flex items-center gap-3 text-white">
-          <span className="grid size-9 place-items-center rounded-lg bg-accent font-bold text-ink">T</span>
+          <span className="grid size-9 place-items-center rounded-lg bg-accent font-bold text-ink">S</span>
           <span className="leading-tight">
-            <span className="block text-lg font-bold">Topaz-Vbe</span>
+            <span className="block text-lg font-bold">StrataSim</span>
             <span className="block text-[11px] font-medium uppercase tracking-wider text-blue-200">Business Strategy Simulation</span>
           </span>
         </Link>

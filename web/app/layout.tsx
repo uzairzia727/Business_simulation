@@ -7,7 +7,7 @@ import "./globals.css";
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Topaz-Vbe | Business Strategy Simulation",
+  title: "StrataSim | Business Strategy Simulation",
   description: "Eight competing companies, eight strategist roles, quarterly decisions and management reports.",
 };
 
@@ -20,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main id="main" className="flex-1">{children}</main>
         <footer className="bg-ink py-8 text-sm text-slate-300">
           <div className="wrap flex flex-wrap justify-between gap-4">
-            <p>Topaz-Vbe — business strategy simulation for 8 companies.</p>
+            <p>StrataSim — business strategy simulation for 8 companies.</p>
             <nav className="flex gap-4">
               <Link className="hover:text-white" href="/guide">Guide</Link>
               <Link className="hover:text-white" href="/team/1">Decisions</Link>

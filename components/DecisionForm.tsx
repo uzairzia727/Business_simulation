@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ALL_IDS, FIELDS, GROUP_TITLES, Group, REGION_ROWS, ROLES, Team, autofill, calculate, emptyTeam, isBlank, roleData } from "@/lib/sim";
 import { useTeams } from "@/lib/store";
 import { SavePdf, TeamReport } from "./Reports";
@@ -35,6 +35,9 @@ export default function DecisionForm({ idx }: { idx: number }) {
     setMsg("Report generated below");
     setTimeout(() => document.getElementById("team-report")?.scrollIntoView({ behavior: "smooth" }), 50);
   };
+
+  // Opened from the league table: jump to this team's report once data has loaded.
+  useEffect(() => { if (ready && location.hash === "#team-report") document.getElementById("team-report")?.scrollIntoView(); }, [ready]);
 
   if (!ready) return <div className="wrap py-12 text-mute">Loading…</div>;
 

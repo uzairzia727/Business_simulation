@@ -1,6 +1,5 @@
 "use client";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { OPEN, REGION_ROWS, ROLES, Team, fmt, gbp } from "@/lib/sim";
 import { useTeams } from "@/lib/store";
@@ -23,9 +22,7 @@ const Block = ({ title, children }: { title: string; children: React.ReactNode }
 
 export default function Reports() {
   const router = useRouter();
-  const sp = useSearchParams();
   const { teams, ready, generateAll } = useTeams();
-  const idx = Math.min(7, Math.max(0, Number(sp.get("team") || 1) - 1));
 
   // Any company without a report is auto-filled from its role and calculated.
   useEffect(() => { if (ready && teams.some((t) => !t.report)) generateAll(teams); }, [ready, teams, generateAll]);
@@ -33,19 +30,19 @@ export default function Reports() {
   if (!ready || teams.some((t) => !t.report)) return <div className="wrap py-12 text-mute">Generating reports…</div>;
 
   const league = teams.map((t, i) => ({ i, r: t.report! })).sort((a, b) => b.r.net - a.r.net);
-  const t = teams[idx];
-  const pick = (i: number) => router.push(`/reports?team=${i + 1}`, { scroll: false });
+  const pick = (i: number) => router.push(`/team/${i + 1}#team-report`);
 
   return (
     <div className="wrap py-10">
       <div className="team-hide flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-brand-dark">Management reports</h1>
-          <p className="mt-1 text-mute">All 8 companies, generated from each team&apos;s decisions (blank decisions are auto-filled from the team&apos;s role).</p>
+          <h1 className="text-3xl font-bold text-brand-dark">League table</h1>
+          <p className="mt-1 text-mute">How all 8 companies compare. Click a company to open its full report.</p>
         </div>
         <div className="no-print flex flex-wrap gap-2">
           <button className="btn" onClick={() => generateAll(teams.map((x) => ({ ...x, report: null })))}>Recalculate all</button>
-          <button className="btn btn-primary" onClick={() => window.print()}>Print / PDF</button>
+          <button className="btn btn-primary" onClick={() => window.print()}>Save as PDF</button>
+          <button className="btn btn-danger" onClick={() => { if (confirm("Reset all 8 companies back to their role strategies? Your edits will be lost.")) generateAll(teams.map(() => ({ year: "", quarter: "", simCode: "", groupNo: "", d: {}, report: null }))); }}>Reset all</button>
         </div>
       </div>
 
@@ -56,7 +53,7 @@ export default function Reports() {
             <thead><tr><th>Rank</th><th>Company</th><th>Revenue</th><th>Gross profit</th><th>Net profit</th><th>Closing cash</th></tr></thead>
             <tbody>
               {league.map(({ i, r: x }, k) => (
-                <tr key={i} onClick={() => pick(i)} className={`cursor-pointer hover:bg-slate-50 ${i === idx ? "bg-blue-50" : ""}`}>
+                <tr key={i} onClick={() => pick(i)} className={`cursor-pointer hover:bg-slate-50`}>
                   <td><span className={`inline-grid size-7 place-items-center rounded-full text-xs font-bold ${k === 0 ? "bg-accent text-ink" : "bg-slate-100"}`}>{k + 1}</span></td>
                   <td className="!text-left"><div className="flex items-center gap-3"><RoleIcon i={i} size="size-9" /><div><button className="text-left font-semibold text-brand hover:underline" onClick={() => pick(i)}>Team {i + 1}</button>
                     <span className="block text-xs text-mute">{ROLES[i].name}</span></div></div></td>
@@ -87,14 +84,6 @@ export default function Reports() {
         </div>
       </section>
 
-      <TeamReport t={t} idx={idx} controls={<>
-          <label className="sr-only" htmlFor="pick">Company</label>
-          <select id="pick" className="input w-auto" value={idx} onChange={(e) => pick(Number(e.target.value))}>
-            {ROLES.map((R, i) => <option key={i} value={i}>Team {i + 1}: {R.name}</option>)}
-          </select>
-          <Link className="btn" href={`/team/${idx + 1}`}>Edit decisions</Link>
-          <SavePdf />
-      </>} />
     </div>
   );
 }

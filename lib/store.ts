@@ -1,8 +1,8 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { TEAMS, Team, emptyTeam, autofill, calculate } from "./sim";
+import { TEAMS, Team, emptyTeam, autofill, calculateAll } from "./sim";
 
-const KEY = "topazNextTeamsV1";
+const KEY = "strataSimTeamsV2";
 
 export function useTeams() {
   const [teams, setTeams] = useState<Team[]>(() => Array.from({ length: TEAMS }, emptyTeam));
@@ -22,7 +22,9 @@ export function useTeams() {
   }, []);
 
   const generateAll = useCallback((base: Team[]) => {
-    const next = base.map((t, i) => { const f = autofill(t, i); return { ...f, report: calculate(f.d, f.quarter) }; });
+    const filled = base.map((t, i) => autofill(t, i));
+    const reports = calculateAll(filled);
+    const next = filled.map((t, i) => ({ ...t, report: reports[i] }));
     save(next);
     return next;
   }, [save]);

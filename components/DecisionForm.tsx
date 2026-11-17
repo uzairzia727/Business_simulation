@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ALL_IDS, FIELDS, GROUP_TITLES, Group, REGION_ROWS, ROLES, Team, autofill, calculate, emptyTeam, isBlank, roleData } from "@/lib/sim";
+import { ALL_IDS, FIELDS, GROUP_TITLES, Group, REGION_ROWS, ROLES, Team, autofill, emptyTeam, isBlank, roleData } from "@/lib/sim";
 import { useTeams } from "@/lib/store";
 import { SavePdf, TeamReport } from "./Reports";
 
@@ -29,9 +29,8 @@ export default function DecisionForm({ idx }: { idx: number }) {
 
   const generate = () => {
     if (missing.length) { setShowErr(true); setMsg(`${missing.length} field(s) are blank — fill them or use “Reset to role strategy”.`); return; }
-    const next = [...teams];
-    next[idx] = { ...t, report: calculate(t.d, t.quarter) };
-    save(next);
+    // Every company competes in one market, so all eight are recalculated together.
+    generateAll(teams.map((x, i) => (i === idx ? t : x)));
     setMsg("Report generated below");
     setTimeout(() => document.getElementById("team-report")?.scrollIntoView({ behavior: "smooth" }), 50);
   };

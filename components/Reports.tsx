@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { OPEN, REGION_ROWS, ROLES, Team, fmt, gbp } from "@/lib/sim";
+import { OPEN, REGION_ROWS, ROLES, Report, Team, fmt, gbp } from "@/lib/sim";
 import { useTeams } from "@/lib/store";
 import RoleIcon, { ROLE_BAR } from "./RoleIcon";
 
@@ -29,6 +29,7 @@ export default function Reports() {
 
   if (!ready || teams.some((t) => !t.report)) return <div className="wrap py-12 text-mute">Generating reports…</div>;
 
+  const totalSold = teams.reduce((s, t) => s + t.report!.soldU.reduce((a, b) => a + b, 0), 0) || 1;
   const league = teams.map((t, i) => ({ i, r: t.report! })).sort((a, b) => b.r.net - a.r.net);
   const pick = (i: number) => router.push(`/team/${i + 1}#team-report`);
 
@@ -50,7 +51,7 @@ export default function Reports() {
         <h2 className="mb-3 font-semibold">League table — ranked by net profit</h2>
         <div className="overflow-x-auto">
           <table className="tbl">
-            <thead><tr><th>Rank</th><th>Company</th><th>Revenue</th><th>Gross profit</th><th>Net profit</th><th>Closing cash</th></tr></thead>
+            <thead><tr><th>Rank</th><th>Company</th><th>Revenue</th><th>Gross profit</th><th>Net profit</th><th>Market share</th><th>Closing cash</th></tr></thead>
             <tbody>
               {league.map(({ i, r: x }, k) => (
                 <tr key={i} onClick={() => pick(i)} className={`cursor-pointer hover:bg-slate-50`}>
@@ -59,6 +60,7 @@ export default function Reports() {
                     <span className="block text-xs text-mute">{ROLES[i].name}</span></div></div></td>
                   <td>{gbp(x.revenue)}</td><td>{gbp(x.gross)}</td>
                   <td className={`font-semibold ${x.net < 0 ? "text-red-700" : "text-emerald-700"}`}>{gbp(x.net)}</td>
+                  <td>{((x.soldU.reduce((a, b) => a + b, 0) / totalSold) * 100).toFixed(1)}%</td>
                   <td>{gbp(x.cashShown - x.overdraft)}</td>
                 </tr>
               ))}
@@ -116,6 +118,13 @@ export function TeamReport({ t, idx, controls }: { t: Team; idx: number; control
             ["Trade press (Rs 000)", d.p1trade, d.p2trade, d.p3trade], ["Merchandising (Rs 000)", d.p1merch, d.p2merch, d.p3merch],
             ["Assembly time (mins)", d.p1time, d.p2time, d.p3time], ["Units delivered", ...r.u.map(fmt)]]} />
         </Block>
+        <Block title="Market performance">
+          <Table head={["Measure", "Product 1", "Product 2", "Product 3"]} rows={[
+            ["Customer demand (units)", ...r.demandU.map(fmt)], ["Units delivered", ...r.u.map(fmt)],
+            ["Units sold", ...r.soldU.map(fmt)], ["Unsold stock (units)", ...r.unsold.map(fmt)],
+            ["Lost sales — not enough stock", ...r.lostSales.map(fmt)]]} />
+          <p className="mt-3 text-sm text-mute">{insight(r)}</p>
+        </Block>
         <div className="grid gap-6 lg:grid-cols-2">
           <Block title="Profit and loss account">
             <Table head={["Item", "Rs"]} rows={[
@@ -135,7 +144,7 @@ export function TeamReport({ t, idx, controls }: { t: Team; idx: number; control
           <Block title="Balance sheet">
             <Table head={["Assets / liabilities", "Rs"]} rows={[
               ["Property", gbp(OPEN.property)], ["Plant & machinery (NBV)", gbp(r.machineNBV)], ["Vehicles (NBV)", gbp(r.vehicleNBV)],
-              ["Raw material stock", gbp(r.matValue)], ["Debtors", gbp(r.debtors)], ["Cash", gbp(r.cashShown)],
+              ["Raw material stock", gbp(r.matValue)], ["Finished goods stock", gbp(r.fgValue)], ["Debtors", gbp(r.debtors)], ["Cash", gbp(r.cashShown)],
               ["Creditors", gbp(r.creditors)], ["Bank overdraft", gbp(r.overdraft)], ["Share capital", gbp(OPEN.shareCapital)],
               ["Reserves", gbp(OPEN.reserves + r.net - r.dividend)], ["Net assets", gbp(r.netAssets)]]} />
           </Block>
@@ -154,7 +163,7 @@ export function TeamReport({ t, idx, controls }: { t: Team; idx: number; control
               ["Salespeople", "—", fmt(r.salesForce)], ["Raw material stock (units)", OPEN.materialStock, fmt(r.materialStock)]]} />
           </Block>
           <div className="grid gap-6">
-            <Block title="Product movements (units)">
+            <Block title="Units delivered by region">
               <Table head={["Region", "P1", "P2", "P3"]} rows={REGION_ROWS.map((row) => [row[0], ...row.slice(1).map((k) => fmt(d[k]))])} />
             </Block>
             <Block title="Economic information">
@@ -172,3 +181,11 @@ export function TeamReport({ t, idx, controls }: { t: Team; idx: number; control
 export const SavePdf = () => (
   <button className="btn btn-primary" onClick={() => { document.body.classList.add("print-team"); window.print(); document.body.classList.remove("print-team"); }}>Save as PDF</button>
 );
+
+// One plain-language takeaway about supply vs demand.
+function insight(r: Report) {
+  const lost = r.lostSales.reduce((a, b) => a + b, 0), unsold = r.unsold.reduce((a, b) => a + b, 0);
+  if (lost > unsold && lost > 0) return `Customers wanted ${fmt(lost)} more units than you delivered: produce more, or raise prices to earn more per unit.`;
+  if (unsold > 0) return `${fmt(unsold)} units were not sold and are held as stock: deliver fewer units, cut prices or market harder.`;
+  return "Supply matched customer demand.";
+}

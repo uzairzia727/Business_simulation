@@ -10,6 +10,7 @@ export default function Guide() {
       <h2>Getting started</h2>
       <p>1. Assign each team its company from the <strong>Teams</strong> menu. 2. Every form starts pre-filled from the team&apos;s role. 3. Teams change the decisions they disagree with. 4. Open <strong>Reports</strong> to compare all eight companies.</p>
       <h2>The business environment</h2>
+      <p><strong>All eight companies share one market.</strong> Customer demand for each product in each region is split between companies by how attractive their offer is: lower price, more marketing, more salespeople in that region, product improvements, research and longer credit all win share. You sell the smaller of what you deliver and what customers want — deliver too little and you lose sales; deliver too much and the rest sits in stock.</p>
       <p>Demand responds to price, advertising, trade press, merchandising, sales coverage and product improvement. Machine hours and assembly minutes constrain output; overtime is charged when worker hours fall short. Cash is constrained by debtors, creditors, capital spending and dividends.</p>
       <h2>Account identities</h2>
       <p>Revenue = units × regional price. Cost of sales = materials + direct labour + production overheads. Gross profit = revenue − cost of sales. Net profit is after selling costs, administration, interest and tax.</p>

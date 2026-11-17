@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { AGENTS, AGENT_COST, ALL_IDS, FIELDS, GROUP_TITLES, Group, REGION_ROWS, ROLES, Team, autofill, emptyTeam, isBlank, roleData } from "@/lib/sim";
 import { useTeams } from "@/lib/store";
 import { SavePdf, TeamReport } from "./Reports";
+import Advisor from "./Advisor";
 
 const META: [keyof Team, string][] = [["year", "Year"], ["quarter", "Quarter (1–4)"], ["simCode", "Simulation code"], ["groupNo", "Group number"]];
 
@@ -133,6 +134,7 @@ export default function DecisionForm({ idx }: { idx: number }) {
       {t.report && (
         <div className="mt-12 border-t-4 border-brand pt-8">
           <TeamReport t={t} idx={idx} controls={<><button className="btn" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Back to decisions</button><SavePdf /></>} />
+          <div className="mt-6"><Advisor t={t} idx={idx} teams={teams} /></div>
         </div>
       )}
     </div>

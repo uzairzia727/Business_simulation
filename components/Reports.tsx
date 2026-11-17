@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
-import { OPEN, REGION_ROWS, ROLES, fmt, gbp } from "@/lib/sim";
+import { OPEN, REGION_ROWS, ROLES, Team, fmt, gbp } from "@/lib/sim";
 import { useTeams } from "@/lib/store";
 import RoleIcon, { ROLE_BAR } from "./RoleIcon";
 
@@ -33,7 +33,7 @@ export default function Reports() {
   if (!ready || teams.some((t) => !t.report)) return <div className="wrap py-12 text-mute">Generating reports…</div>;
 
   const league = teams.map((t, i) => ({ i, r: t.report! })).sort((a, b) => b.r.net - a.r.net);
-  const t = teams[idx], r = t.report!, d = r.d;
+  const t = teams[idx];
   const pick = (i: number) => router.push(`/reports?team=${i + 1}`, { scroll: false });
 
   return (
@@ -87,6 +87,22 @@ export default function Reports() {
         </div>
       </section>
 
+      <TeamReport t={t} idx={idx} controls={<>
+          <label className="sr-only" htmlFor="pick">Company</label>
+          <select id="pick" className="input w-auto" value={idx} onChange={(e) => pick(Number(e.target.value))}>
+            {ROLES.map((R, i) => <option key={i} value={i}>Team {i + 1}: {R.name}</option>)}
+          </select>
+          <Link className="btn" href={`/team/${idx + 1}`}>Edit decisions</Link>
+          <SavePdf />
+      </>} />
+    </div>
+  );
+}
+
+export function TeamReport({ t, idx, controls }: { t: Team; idx: number; controls?: React.ReactNode }) {
+  const r = t.report!, d = r.d;
+  return (
+    <div id="team-report">
       <div className="mt-10 flex flex-wrap items-end justify-between gap-4 border-b border-line pb-4">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wider text-brand">StrataSim management report</p>
@@ -94,12 +110,7 @@ export default function Reports() {
           <p className="text-sm text-mute">Year {t.year} · Quarter {t.quarter} · Simulation {t.simCode} · Group {t.groupNo}</p>
         </div>
         <div className="no-print flex flex-wrap gap-2">
-          <label className="sr-only" htmlFor="pick">Company</label>
-          <select id="pick" className="input w-auto" value={idx} onChange={(e) => pick(Number(e.target.value))}>
-            {ROLES.map((R, i) => <option key={i} value={i}>Team {i + 1}: {R.name}</option>)}
-          </select>
-          <Link className="btn" href={`/team/${idx + 1}`}>Edit decisions</Link>
-          <button className="btn btn-primary" onClick={() => { document.body.classList.add("print-team"); window.print(); document.body.classList.remove("print-team"); }}>Save as PDF</button>
+          {controls}
         </div>
       </div>
 
@@ -168,3 +179,7 @@ export default function Reports() {
     </div>
   );
 }
+
+export const SavePdf = () => (
+  <button className="btn btn-primary" onClick={() => { document.body.classList.add("print-team"); window.print(); document.body.classList.remove("print-team"); }}>Save as PDF</button>
+);

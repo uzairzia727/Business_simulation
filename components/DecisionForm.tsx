@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ALL_IDS, FIELDS, GROUP_TITLES, Group, REGION_ROWS, ROLES, Team, autofill, calculate, emptyTeam, isBlank, roleData } from "@/lib/sim";
 import { useTeams } from "@/lib/store";
+import { SavePdf, TeamReport } from "./Reports";
 
 const META: [keyof Team, string][] = [["year", "Year"], ["quarter", "Quarter (1–4)"], ["simCode", "Simulation code"], ["groupNo", "Group number"]];
 
@@ -31,7 +32,8 @@ export default function DecisionForm({ idx }: { idx: number }) {
     const next = [...teams];
     next[idx] = { ...t, report: calculate(t.d, t.quarter) };
     save(next);
-    router.push(`/reports?team=${idx + 1}`);
+    setMsg("Report generated below");
+    setTimeout(() => document.getElementById("team-report")?.scrollIntoView({ behavior: "smooth" }), 50);
   };
 
   if (!ready) return <div className="wrap py-12 text-mute">Loading…</div>;
@@ -101,6 +103,11 @@ export default function DecisionForm({ idx }: { idx: number }) {
           </div>
         </section>
       </div>
+      {t.report && (
+        <div className="mt-12 border-t-4 border-brand pt-8">
+          <TeamReport t={t} idx={idx} controls={<><button className="btn" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Back to decisions</button><SavePdf /></>} />
+        </div>
+      )}
     </div>
   );
 }

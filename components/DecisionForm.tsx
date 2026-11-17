@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ALL_IDS, FIELDS, GROUP_TITLES, Group, REGION_ROWS, ROLES, Team, autofill, emptyTeam, isBlank, roleData } from "@/lib/sim";
+import { AGENTS, AGENT_COST, ALL_IDS, FIELDS, GROUP_TITLES, Group, REGION_ROWS, ROLES, Team, autofill, emptyTeam, isBlank, roleData } from "@/lib/sim";
 import { useTeams } from "@/lib/store";
 import { SavePdf, TeamReport } from "./Reports";
 
@@ -60,6 +60,31 @@ export default function DecisionForm({ idx }: { idx: number }) {
         <button className="btn" onClick={() => { update({ d: roleData(idx) }); setShowErr(false); setMsg(`${role.name} strategy restored`); }}>Reset to role strategy</button>
         <button className="btn btn-danger ml-auto" onClick={() => { if (confirm(`Clear every decision for Team ${idx + 1}?`)) { const next = [...teams]; next[idx] = { ...emptyTeam(), touched: true }; save(next); setMsg("Cleared"); } }}>Clear</button>
       </div>
+
+      <section className="card mt-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-semibold">AI agents</h2>
+            <p className="text-sm text-mute">Each agent costs Rs {AGENT_COST.toLocaleString("en-PK")} per quarter. The report shows what they earn back.</p>
+          </div>
+          <div className="flex gap-2">
+            <button className="btn" onClick={() => update({ agents: Object.fromEntries(AGENTS.map((a) => [a.id, true])) })}>All on</button>
+            <button className="btn" onClick={() => update({ agents: {} })}>All off</button>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {AGENTS.map((a) => {
+            const checked = !!t.agents?.[a.id];
+            return (
+              <label key={a.id} className={`flex cursor-pointer gap-3 rounded-xl border p-3 transition ${checked ? "border-brand bg-blue-50" : "border-line hover:bg-slate-50"}`}>
+                <input type="checkbox" className="mt-1 size-4 accent-brand" checked={checked}
+                  onChange={(e) => update({ agents: { ...t.agents, [a.id]: e.target.checked } })} />
+                <span><span className="block text-sm font-semibold">{a.name}</span><span className="block text-xs leading-5 text-mute">{a.does}</span></span>
+              </label>
+            );
+          })}
+        </div>
+      </section>
 
       <section className="card mt-6">
         <h2 className="font-semibold">Simulation data</h2>

@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { TEAMS, Team, emptyTeam, autofill, calculateAll } from "./sim";
+import { TEAMS, Team, emptyTeam, autofill, calculateAll, agentImpact } from "./sim";
 
 const KEY = "strataSimTeamsV3";
 
@@ -25,7 +25,7 @@ export function useTeams() {
   const generateAll = useCallback((base: Team[]) => {
     const filled = base.map((t, i) => autofill(t, i));
     const reports = calculateAll(filled);
-    const next = filled.map((t, i) => ({ ...t, report: reports[i] }));
+    const next = filled.map((t, i) => ({ ...t, report: reports[i], ai: agentImpact(filled, i) }));
     save(next);
     return next;
   }, [save]);

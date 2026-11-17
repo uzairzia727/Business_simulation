@@ -123,6 +123,7 @@ export function TeamReport({ t, idx, controls }: { t: Team; idx: number; control
             ["Trade press (Rs 000)", d.p1trade, d.p2trade, d.p3trade], ["Merchandising (Rs 000)", d.p1merch, d.p2merch, d.p3merch],
             ["Assembly time (mins)", d.p1time, d.p2time, d.p3time], ["Units delivered", ...r.u.map(fmt)]]} />
         </Block>
+        <AiBlock t={t} />
         <Block title="Performance by quarter">
           <Table head={["Quarter", "Revenue", "Net profit", "Closing cash", "Market share"]} rows={[
             ...(t.history ?? []).map((h) => [h.label, gbp(h.revenue), gbp(h.net), gbp(h.cash), `${(h.share * 100).toFixed(1)}%`]),
@@ -198,4 +199,44 @@ function insight(r: Report) {
   if (lost > unsold && lost > 0) return `Customers wanted ${fmt(lost)} more units than you delivered: produce more, or raise prices to earn more per unit.`;
   if (unsold > 0) return `${fmt(unsold)} units were not sold and are held as stock: deliver fewer units, cut prices or market harder.`;
   return "Supply matched customer demand.";
+}
+
+// With vs without AI agents: same quarter, same rivals, only this company's agents switched off.
+function AiBlock({ t }: { t: Team }) {
+  const r = t.report!, ai = t.ai;
+  if (!ai) return (
+    <Block title="AI agents">
+      <p className="text-sm text-mute">No AI agents are switched on. Turn some on in the decision form to see what they add.</p>
+    </Block>
+  );
+  const sum = (a: number[]) => a.reduce((x, y) => x + y, 0);
+  const rows: [string, number, number, boolean][] = [
+    ["Net profit", r.net, ai.off.net, true], ["Revenue", r.revenue, ai.off.revenue, true],
+    ["Units sold", sum(r.soldU), ai.off.sold, false], ["Lost sales (units)", sum(r.lostSales), ai.off.lost, false],
+    ["Unsold stock (units)", sum(r.unsold), ai.off.unsold, false], ["Closing cash", r.cashShown - r.overdraft, ai.off.cash, true],
+  ];
+  const money = (v: number, m: boolean) => (m ? gbp(v) : fmt(v));
+  const diff = (a: number, b: number, m: boolean) => (a - b >= 0 ? "+" : "−") + money(Math.abs(a - b), m).replace("−", "");
+  const max = Math.max(1, ...ai.each.map((e) => Math.abs(e.value)));
+  const gain = r.net - ai.off.net;
+  return (
+    <Block title={`AI agents: with vs without (${r.agentsOn} of 8 on)`}>
+      <p className={`mb-3 text-sm font-semibold ${gain >= 0 ? "text-emerald-700" : "text-red-700"}`}>
+        Your agents {gain >= 0 ? "add" : "cost"} {gbp(Math.abs(gain))} net profit this quarter, after their running cost of {gbp(r.agentCost)}.
+      </p>
+      <Table head={["Measure", "With agents", "Without agents", "Difference"]}
+        rows={rows.map(([l, a, b, m]) => [l, money(a, m), money(b, m), diff(a, b, m)])} />
+      <h4 className="mt-5 text-sm font-semibold">Value of each agent</h4>
+      <p className="text-xs text-mute">Net profit lost if only this agent is switched off. Red means it costs more than it earns this quarter.</p>
+      <div className="mt-3 grid gap-2">
+        {ai.each.map((e) => (
+          <div key={e.id} className="grid grid-cols-[9.5rem_1fr_6.5rem] items-center gap-3 text-sm">
+            <span className="truncate">{e.name}</span>
+            <span className="h-4 rounded bg-slate-100"><span className={`block h-full rounded ${e.value >= 0 ? "bg-brand" : "bg-red-500"}`} style={{ width: `${Math.max(2, (Math.abs(e.value) / max) * 100)}%` }} /></span>
+            <span className={`text-right font-semibold tabular-nums ${e.value < 0 ? "text-red-700" : ""}`}>{e.value >= 0 ? "+" : "−"}{gbp(Math.abs(e.value)).replace("−", "")}</span>
+          </div>
+        ))}
+      </div>
+    </Block>
+  );
 }

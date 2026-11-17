@@ -54,6 +54,12 @@ export default function DecisionForm({ idx }: { idx: number }) {
         <p role="status" aria-live="polite" className="text-sm font-medium text-emerald-700">{msg}</p>
       </div>
 
+      {t.aiRun && (
+        <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm">
+          <p className="font-semibold text-brand-dark">This company is run by an AI competitor.</p>
+          <p className="mt-1 text-slate-700">{t.aiNote ? `Its latest reasoning: ${t.aiNote}` : "It makes its decisions from the League table page."} Switch it to Human there to take over.</p>
+        </div>
+      )}
       <div className="no-print sticky top-16 z-30 mt-6 flex flex-wrap gap-2 rounded-2xl border border-line bg-white/90 p-3 shadow-sm backdrop-blur">
         <button className="btn btn-primary" onClick={generate}>Generate report</button>
         <button className="btn btn-accent" onClick={() => { generateAll(teams.map((x, i) => (i === idx ? t : x))); router.push("/reports"); }}>Auto-generate all 8 reports</button>

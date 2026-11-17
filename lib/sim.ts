@@ -76,6 +76,15 @@ export const FIELDS: Field[] = [
 
 export const ALL_IDS = FIELDS.map((f) => f[0]).concat(REGION_ROWS.flatMap((r) => r.slice(1) as string[]));
 
+// Allowed range for each decision, used to validate decisions an AI competitor proposes.
+export function bounds(id: string): [number, number] {
+  if (/^major\d$/.test(id) || id === "infoCompanies" || id === "marketShares") return [0, 1];
+  if (id === "supplier" || id === "shift") return [1, 3];
+  if (id.endsWith("Qty")) return [0, 12000];
+  const f = FIELDS.find((x) => x[0] === id);
+  return [0, Math.max(5, (f?.[3] ?? 10) * 3)];
+}
+
 const OPEN = {
   machines: 10, vans: 17, workers: 85, materialStock: 8000,
   cash: 185000, property: 300000, machineNBV: 1594818, vehicleNBV: 175758,
@@ -108,7 +117,7 @@ export function roleData(i: number): Values {
 
 export type Meta = { year: string; quarter: string; simCode: string; groupNo: string };
 export type QuarterSummary = { label: string; revenue: number; net: number; cash: number; share: number };
-export type Team = Meta & { d: Values; report: Report | null; touched?: boolean; agents?: Agents; ai?: ReturnType<typeof agentImpact>; pos?: Position; history?: QuarterSummary[] };
+export type Team = Meta & { d: Values; report: Report | null; touched?: boolean; agents?: Agents; aiRun?: boolean; aiNote?: string; ai?: ReturnType<typeof agentImpact>; pos?: Position; history?: QuarterSummary[] };
 
 export const isBlank = (v: unknown) => v === null || v === undefined || String(v).trim() === "";
 const n = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : 0);

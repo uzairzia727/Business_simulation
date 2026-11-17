@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { OPEN, REGION_ROWS, ROLES, Report, Team, fmt, gbp } from "@/lib/sim";
 import { useTeams } from "@/lib/store";
 import RoleIcon, { ROLE_BAR } from "./RoleIcon";
+import Competitors from "./Competitors";
 
 type Cell = string | number;
 function Table({ head, rows }: { head: string[]; rows: Cell[][] }) {
@@ -22,7 +23,7 @@ const Block = ({ title, children }: { title: string; children: React.ReactNode }
 
 export default function Reports() {
   const router = useRouter();
-  const { teams, ready, generateAll, closeQuarter } = useTeams();
+  const { teams, ready, save, generateAll, closeQuarter, runCompetitors } = useTeams();
 
   // Any company without a report is auto-filled from its role and calculated.
   useEffect(() => { if (ready && teams.some((t) => !t.report)) generateAll(teams); }, [ready, teams, generateAll]);
@@ -52,6 +53,8 @@ export default function Reports() {
         </div>
       </div>
 
+      <Competitors teams={teams} save={save} run={runCompetitors} />
+
       <section className="card mt-6 team-hide" id="league">
         <h2 className="mb-3 font-semibold">Ranking — total profit across all quarters</h2>
         <div className="overflow-x-auto">
@@ -62,7 +65,7 @@ export default function Reports() {
                 <tr key={i} onClick={() => pick(i)} className={`cursor-pointer hover:bg-slate-50`}>
                   <td><span className={`inline-grid size-7 place-items-center rounded-full text-xs font-bold ${k === 0 ? "bg-accent text-ink" : "bg-slate-100"}`}>{k + 1}</span></td>
                   <td className="!text-left"><div className="flex items-center gap-3"><RoleIcon i={i} size="size-9" /><div><button className="text-left font-semibold text-brand hover:underline" onClick={() => pick(i)}>Team {i + 1}</button>
-                    <span className="block text-xs text-mute">{ROLES[i].name}</span></div></div></td>
+                    <span className="block text-xs text-mute">{ROLES[i].name}{teams[i].aiRun ? " · AI" : ""}</span></div></div></td>
                   <td>{gbp(x.revenue)}</td><td className={x.net < 0 ? "text-red-700" : ""}>{gbp(x.net)}</td>
                   <td className={`font-semibold ${tot < 0 ? "text-red-700" : "text-emerald-700"}`}>{gbp(tot)}</td>
                   <td>{((x.soldU.reduce((a, b) => a + b, 0) / totalSold) * 100).toFixed(1)}%</td>

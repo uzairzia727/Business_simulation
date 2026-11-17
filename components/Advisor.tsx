@@ -1,12 +1,14 @@
 "use client";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { ROLES, Team } from "@/lib/sim";
+import { loadTeams } from "@/lib/store";
 
 // Strip leftover Markdown symbols the model sometimes adds.
 const clean = (t: string) => t.replace(/\*+/g, "").replace(/^#+ /gm, "");
 
 type Msg = { role: "user" | "assistant"; text: string };
-const STARTERS = ["Explain my results in plain words", "Why did I lose sales or have unsold stock?", "What should I change next quarter?", "How am I doing against my rivals?"];
+const TEAM_STARTERS = ["Explain my results in plain words", "Why did I lose sales or have unsold stock?", "What should I change next quarter?", "How am I doing against my rivals?"];
 
 // Compact view of the numbers the advisor needs (keeps the request small).
 function context(t: Team, idx: number, teams: Team[]) {
@@ -25,7 +27,20 @@ function context(t: Team, idx: number, teams: Team[]) {
   };
 }
 
-export default function Advisor({ t, idx, teams }: { t: Team; idx: number; teams: Team[] }) {
+function leagueContext(teams: Team[]) {
+  return {
+    view: "League overview of all 8 companies",
+    companies: teams.map((x, i) => x.report ? {
+      company: `Team ${i + 1}`, strategy: ROLES[i].name, quarter: `Y${x.year} Q${x.quarter}`,
+      revenue: Math.round(x.report.revenue), netProfit: Math.round(x.report.net),
+      totalProfit: Math.round((x.history ?? []).reduce((s, h) => s + h.net, 0) + x.report.net),
+      unitsSold: x.report.soldU.reduce((a, b) => a + b, 0), unsold: x.report.unsold.reduce((a, b) => a + b, 0),
+      lostSales: x.report.lostSales.reduce((a, b) => a + b, 0), cash: Math.round(x.report.cashShown - x.report.overdraft), aiAgentsOn: x.report.agentsOn,
+    } : { company: `Team ${i + 1}`, strategy: ROLES[i].name, note: "no report yet" }),
+  };
+}
+
+function AdvisorChat({ getContext, starters, scope }: { getContext: () => unknown; starters: string[]; scope: string }) {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -36,7 +51,7 @@ export default function Advisor({ t, idx, teams }: { t: Team; idx: number; teams
     const next: Msg[] = [...msgs, { role: "user", text: q.trim() }];
     setMsgs(next); setInput(""); setBusy(true); setError("");
     try {
-      const res = await fetch("/api/advisor", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ context: context(t, idx, teams), messages: next }) });
+      const res = await fetch("/api/advisor", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ context: getContext(), messages: next }) });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Something went wrong."); setMsgs(msgs); return; }
       setMsgs([...next, { role: "assistant", text: data.text }]);
@@ -45,37 +60,66 @@ export default function Advisor({ t, idx, teams }: { t: Team; idx: number; teams
   };
 
   return (
-    <section className="card no-print" aria-labelledby="advisor-h">
-      <div className="flex items-center gap-3">
-        <span className="grid size-9 place-items-center rounded-lg bg-brand text-sm font-bold text-white" aria-hidden="true">AI</span>
-        <div>
-          <h3 id="advisor-h" className="font-semibold">Advisor</h3>
-          <p className="text-xs text-mute">Ask about this report. Answers are written by AI from your numbers, so check before acting.</p>
-        </div>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <p className="text-xs text-mute">{scope} Answers are written by AI from the numbers, so check before acting.</p>
+      <div className="mt-3 grid min-h-0 flex-1 content-start gap-3 overflow-y-auto" aria-live="polite">
+        {msgs.map((m, i) => (
+          <div key={i} className={`max-w-[88%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-6 ${m.role === "user" ? "ml-auto bg-brand text-white" : "bg-slate-100 text-ink"}`}>{m.role === "assistant" ? clean(m.text) : m.text}</div>
+        ))}
+        {busy && <div className="w-fit rounded-2xl bg-slate-100 px-4 py-3 text-sm text-mute">Thinking…</div>}
+        {!msgs.length && (
+          <div className="flex flex-col gap-2">
+            {starters.map((s) => <button key={s} className="btn justify-start text-left text-xs" disabled={busy} onClick={() => ask(s)}>{s}</button>)}
+          </div>
+        )}
       </div>
-
-      {msgs.length > 0 && (
-        <div className="mt-4 grid max-h-[28rem] gap-3 overflow-y-auto" aria-live="polite">
-          {msgs.map((m, i) => (
-            <div key={i} className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-6 ${m.role === "user" ? "ml-auto bg-brand text-white" : "bg-slate-100 text-ink"}`}>{m.role === "assistant" ? clean(m.text) : m.text}</div>
-          ))}
-          {busy && <div className="w-fit rounded-2xl bg-slate-100 px-4 py-3 text-sm text-mute">Thinking…</div>}
-        </div>
-      )}
-
-      {!msgs.length && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {STARTERS.map((s) => <button key={s} className="btn text-xs" disabled={busy} onClick={() => ask(s)}>{s}</button>)}
-        </div>
-      )}
-
       {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
-
-      <form className="mt-4 flex gap-2" onSubmit={(e) => { e.preventDefault(); ask(input); }}>
+      <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); ask(input); }}>
         <label htmlFor="advisor-q" className="sr-only">Your question</label>
-        <input id="advisor-q" className="input flex-1" placeholder="Ask a question about your results…" value={input} onChange={(e) => setInput(e.target.value)} maxLength={500} />
+        <input id="advisor-q" className="input flex-1" placeholder="Ask a question…" value={input} onChange={(e) => setInput(e.target.value)} maxLength={500} />
         <button className="btn btn-primary" disabled={busy || !input.trim()}>{busy ? "…" : "Ask"}</button>
       </form>
-    </section>
+    </div>
+  );
+}
+
+const LEAGUE_STARTERS = ["Who is winning and why?", "Which strategy is working best?", "Which company is in the most trouble?", "What should the bottom team change?"];
+
+// Floating "Ask Advisor" button on every page. On a team page it advises that team; elsewhere, the whole league.
+export default function Advisor() {
+  const path = usePathname();
+  const [open, setOpen] = useState(false);
+  const m = path.match(/^\/team\/(\d)/);
+  const idx = m ? Number(m[1]) - 1 : -1;
+  const label = idx >= 0 ? `Team ${idx + 1}: ${ROLES[idx]?.name}` : "League overview";
+
+  const getContext = () => {
+    const teams = loadTeams() ?? [];
+    const t = teams[idx];
+    return idx >= 0 && t?.report ? context(t, idx, teams) : leagueContext(teams);
+  };
+
+  return (
+    <div className="no-print">
+      {open && (
+        <div role="dialog" aria-label="Advisor" className="fixed inset-x-3 bottom-20 z-50 flex h-[min(34rem,calc(100dvh-7rem))] flex-col rounded-2xl border border-line bg-white p-4 shadow-2xl sm:inset-x-auto sm:right-5 sm:w-[24rem]">
+          <div className="mb-2 flex items-center justify-between">
+            <div>
+              <p className="font-semibold">Advisor</p>
+              <p className="text-xs font-medium text-brand">{label}</p>
+            </div>
+            <button className="btn size-11 px-0" aria-label="Close advisor" onClick={() => setOpen(false)}>✕</button>
+          </div>
+          {/* key resets the chat when the page context changes */}
+          <AdvisorChat key={label} getContext={getContext} starters={idx >= 0 ? TEAM_STARTERS : LEAGUE_STARTERS}
+            scope={idx >= 0 ? "Advising on this team's latest report (generate it first)." : "Advising on all 8 companies."} />
+        </div>
+      )}
+      <button onClick={() => setOpen(!open)} aria-expanded={open}
+        className="fixed bottom-5 right-5 z-50 flex min-h-12 items-center gap-2 rounded-full bg-brand px-5 font-semibold text-white shadow-xl transition hover:bg-blue-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
+        <span className="grid size-7 place-items-center rounded-full bg-white/20 text-xs font-bold" aria-hidden="true">AI</span>
+        {open ? "Close" : "Ask Advisor"}
+      </button>
+    </div>
   );
 }

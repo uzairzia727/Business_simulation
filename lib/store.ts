@@ -4,6 +4,14 @@ import { TEAMS, Team, emptyTeam, autofill, calculateAll, agentImpact } from "./s
 
 const KEY = "strataSimTeamsV3";
 
+// Fresh read of saved data, for components that live across pages (e.g. the floating Advisor).
+export function loadTeams(): Team[] | null {
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY) || "null");
+    return Array.isArray(saved) && saved.length === TEAMS ? saved : null;
+  } catch { return null; }
+}
+
 export function useTeams() {
   const [teams, setTeams] = useState<Team[]>(() => Array.from({ length: TEAMS }, emptyTeam));
   const [ready, setReady] = useState(false);

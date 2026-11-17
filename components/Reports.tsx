@@ -22,7 +22,7 @@ const Block = ({ title, children }: { title: string; children: React.ReactNode }
 
 export default function Reports() {
   const router = useRouter();
-  const { teams, ready, generateAll } = useTeams();
+  const { teams, ready, generateAll, closeQuarter } = useTeams();
 
   // Any company without a report is auto-filled from its role and calculated.
   useEffect(() => { if (ready && teams.some((t) => !t.report)) generateAll(teams); }, [ready, teams, generateAll]);
@@ -30,20 +30,25 @@ export default function Reports() {
   if (!ready || teams.some((t) => !t.report)) return <div className="wrap py-12 text-mute">Generating reports…</div>;
 
   const totalSold = teams.reduce((s, t) => s + t.report!.soldU.reduce((a, b) => a + b, 0), 0) || 1;
-  const league = teams.map((t, i) => ({ i, r: t.report! })).sort((a, b) => b.r.net - a.r.net);
+  const total = (t: Team) => (t.history ?? []).reduce((s, h) => s + h.net, 0) + t.report!.net;
+  const league = teams.map((t, i) => ({ i, r: t.report!, total: total(t) })).sort((a, b) => b.total - a.total);
+  const done = teams[0].history?.length ?? 0;
+  const now = `Year ${teams[0].year} · Quarter ${teams[0].quarter}`;
   const pick = (i: number) => router.push(`/team/${i + 1}#team-report`);
 
   return (
     <div className="wrap py-10">
       <div className="team-hide flex flex-wrap items-end justify-between gap-4">
         <div>
+          <p className="text-sm font-semibold uppercase tracking-wider text-brand">{now} · {done} quarter{done === 1 ? "" : "s"} completed</p>
           <h1 className="text-3xl font-bold text-brand-dark">League table</h1>
-          <p className="mt-1 text-mute">How all 8 companies compare. Click a company to open its full report.</p>
+          <p className="mt-1 text-mute">Ranked by total profit across all quarters. Click a company to open its full report.</p>
         </div>
         <div className="no-print flex flex-wrap gap-2">
-          <button className="btn" onClick={() => generateAll(teams.map((x) => ({ ...x, report: null })))}>Recalculate all</button>
+          <button className="btn btn-accent" onClick={() => { if (confirm(`Close ${now} for all 8 companies? Results are locked in and the next quarter starts from each company's closing position.`)) closeQuarter(teams); }}>Close quarter &amp; start next</button>
+          <button className="btn" onClick={() => generateAll(teams.map((x) => ({ ...x, report: null })))}>Recalculate</button>
           <button className="btn btn-primary" onClick={() => window.print()}>Save as PDF</button>
-          <button className="btn btn-danger" onClick={() => { if (confirm("Reset all 8 companies back to their role strategies? Your edits will be lost.")) generateAll(teams.map(() => ({ year: "", quarter: "", simCode: "", groupNo: "", d: {}, report: null }))); }}>Reset all</button>
+          <button className="btn btn-danger" onClick={() => { if (confirm("Restart the whole simulation from Quarter 1? All quarters and edits will be lost.")) generateAll(teams.map(() => ({ year: "", quarter: "", simCode: "", groupNo: "", d: {}, report: null }))); }}>Reset all</button>
         </div>
       </div>
 
@@ -51,15 +56,15 @@ export default function Reports() {
         <h2 className="mb-3 font-semibold">League table — ranked by net profit</h2>
         <div className="overflow-x-auto">
           <table className="tbl">
-            <thead><tr><th>Rank</th><th>Company</th><th>Revenue</th><th>Gross profit</th><th>Net profit</th><th>Market share</th><th>Closing cash</th></tr></thead>
+            <thead><tr><th>Rank</th><th>Company</th><th>Revenue</th><th>Net profit (this quarter)</th><th>Total profit</th><th>Market share</th><th>Closing cash</th></tr></thead>
             <tbody>
-              {league.map(({ i, r: x }, k) => (
+              {league.map(({ i, r: x, total: tot }, k) => (
                 <tr key={i} onClick={() => pick(i)} className={`cursor-pointer hover:bg-slate-50`}>
                   <td><span className={`inline-grid size-7 place-items-center rounded-full text-xs font-bold ${k === 0 ? "bg-accent text-ink" : "bg-slate-100"}`}>{k + 1}</span></td>
                   <td className="!text-left"><div className="flex items-center gap-3"><RoleIcon i={i} size="size-9" /><div><button className="text-left font-semibold text-brand hover:underline" onClick={() => pick(i)}>Team {i + 1}</button>
                     <span className="block text-xs text-mute">{ROLES[i].name}</span></div></div></td>
-                  <td>{gbp(x.revenue)}</td><td>{gbp(x.gross)}</td>
-                  <td className={`font-semibold ${x.net < 0 ? "text-red-700" : "text-emerald-700"}`}>{gbp(x.net)}</td>
+                  <td>{gbp(x.revenue)}</td><td className={x.net < 0 ? "text-red-700" : ""}>{gbp(x.net)}</td>
+                  <td className={`font-semibold ${tot < 0 ? "text-red-700" : "text-emerald-700"}`}>{gbp(tot)}</td>
                   <td>{((x.soldU.reduce((a, b) => a + b, 0) / totalSold) * 100).toFixed(1)}%</td>
                   <td>{gbp(x.cashShown - x.overdraft)}</td>
                 </tr>
@@ -118,9 +123,14 @@ export function TeamReport({ t, idx, controls }: { t: Team; idx: number; control
             ["Trade press (Rs 000)", d.p1trade, d.p2trade, d.p3trade], ["Merchandising (Rs 000)", d.p1merch, d.p2merch, d.p3merch],
             ["Assembly time (mins)", d.p1time, d.p2time, d.p3time], ["Units delivered", ...r.u.map(fmt)]]} />
         </Block>
+        <Block title="Performance by quarter">
+          <Table head={["Quarter", "Revenue", "Net profit", "Closing cash", "Market share"]} rows={[
+            ...(t.history ?? []).map((h) => [h.label, gbp(h.revenue), gbp(h.net), gbp(h.cash), `${(h.share * 100).toFixed(1)}%`]),
+            [`Y${t.year} Q${t.quarter} (current)`, gbp(r.revenue), gbp(r.net), gbp(r.cashShown - r.overdraft), "—"]]} />
+        </Block>
         <Block title="Market performance">
           <Table head={["Measure", "Product 1", "Product 2", "Product 3"]} rows={[
-            ["Customer demand (units)", ...r.demandU.map(fmt)], ["Units delivered", ...r.u.map(fmt)],
+            ["Customer demand (units)", ...r.demandU.map(fmt)], ["Stock carried in", ...r.open.fg.map(fmt)], ["Units delivered", ...r.u.map(fmt)],
             ["Units sold", ...r.soldU.map(fmt)], ["Unsold stock (units)", ...r.unsold.map(fmt)],
             ["Lost sales — not enough stock", ...r.lostSales.map(fmt)]]} />
           <p className="mt-3 text-sm text-mute">{insight(r)}</p>
@@ -146,7 +156,7 @@ export function TeamReport({ t, idx, controls }: { t: Team; idx: number; control
               ["Property", gbp(OPEN.property)], ["Plant & machinery (NBV)", gbp(r.machineNBV)], ["Vehicles (NBV)", gbp(r.vehicleNBV)],
               ["Raw material stock", gbp(r.matValue)], ["Finished goods stock", gbp(r.fgValue)], ["Debtors", gbp(r.debtors)], ["Cash", gbp(r.cashShown)],
               ["Creditors", gbp(r.creditors)], ["Bank overdraft", gbp(r.overdraft)], ["Share capital", gbp(OPEN.shareCapital)],
-              ["Reserves", gbp(OPEN.reserves + r.net - r.dividend)], ["Net assets", gbp(r.netAssets)]]} />
+              ["Reserves", gbp(r.reserves)], ["Net assets", gbp(r.netAssets)]]} />
           </Block>
           <Block title="Cash flow statement">
             <Table head={["Activity", "Rs"]} rows={[
@@ -156,11 +166,11 @@ export function TeamReport({ t, idx, controls }: { t: Team; idx: number; control
               ["Dividends paid", gbp(r.dividend)], ["Closing cash / (overdraft)", gbp(r.cashShown - r.overdraft)]]} />
           </Block>
           <Block title="Availability and use of resources">
-            <Table head={["Resource", "Last quarter", "This quarter"]} rows={[
-              ["Machines", OPEN.machines, r.machines], ["Machine hours available", "—", fmt(r.mAvail)], ["Machine hours required", "—", fmt(r.mNeed)],
-              ["Van fleet", OPEN.vans, r.vans], ["Assembly workers", OPEN.workers, r.workers], ["Worker hours capacity", "—", fmt(r.hoursCap)],
+            <Table head={["Resource", "Opening", "Closing"]} rows={[
+              ["Machines", r.open.machines, r.machines], ["Machine hours available", "—", fmt(r.mAvail)], ["Machine hours required", "—", fmt(r.mNeed)],
+              ["Van fleet", r.open.vans, r.vans], ["Assembly workers", r.open.workers, r.workers], ["Worker hours capacity", "—", fmt(r.hoursCap)],
               ["Worker hours required", "—", fmt(r.hoursReq)], ["Overtime hours", "—", fmt(r.otHours)],
-              ["Salespeople", "—", fmt(r.salesForce)], ["Raw material stock (units)", OPEN.materialStock, fmt(r.materialStock)]]} />
+              ["Salespeople", "—", fmt(r.salesForce)], ["Raw material stock (units)", fmt(r.open.materialStock), fmt(r.materialStock)]]} />
           </Block>
           <div className="grid gap-6">
             <Block title="Units delivered by region">

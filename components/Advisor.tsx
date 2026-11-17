@@ -115,10 +115,10 @@ export default function Advisor() {
             scope={idx >= 0 ? "Advising on this team's latest report (generate it first)." : "Advising on all 8 companies."} />
         </div>
       )}
-      <button onClick={() => setOpen(!open)} aria-expanded={open}
-        className="fixed bottom-5 right-5 z-50 flex min-h-12 items-center gap-2 rounded-full bg-brand px-5 font-semibold text-white shadow-xl transition hover:bg-blue-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
+      <button onClick={() => setOpen(!open)} aria-expanded={open} aria-label={open ? "Close advisor" : "Ask Advisor"}
+        className="fixed bottom-4 right-4 z-50 flex min-h-12 min-w-12 items-center justify-center gap-2 rounded-full bg-brand px-2.5 sm:bottom-5 sm:right-5 sm:px-5 font-semibold text-white shadow-xl transition hover:bg-blue-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
         <span className="grid size-7 place-items-center rounded-full bg-white/20 text-xs font-bold" aria-hidden="true">AI</span>
-        {open ? "Close" : "Ask Advisor"}
+        <span className="hidden sm:inline">{open ? "Close" : "Ask Advisor"}</span>
       </button>
     </div>
   );

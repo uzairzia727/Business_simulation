@@ -53,7 +53,7 @@ export default function Reports() {
       </div>
 
       <section className="card mt-6 team-hide" id="league">
-        <h2 className="mb-3 font-semibold">League table — ranked by net profit</h2>
+        <h2 className="mb-3 font-semibold">Ranking — total profit across all quarters</h2>
         <div className="overflow-x-auto">
           <table className="tbl">
             <thead><tr><th>Rank</th><th>Company</th><th>Revenue</th><th>Net profit (this quarter)</th><th>Total profit</th><th>Market share</th><th>Closing cash</th></tr></thead>

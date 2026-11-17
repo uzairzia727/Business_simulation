@@ -2,6 +2,9 @@
 import { useState } from "react";
 import { ROLES, Team } from "@/lib/sim";
 
+// Strip leftover Markdown symbols the model sometimes adds.
+const clean = (t: string) => t.replace(/\*+/g, "").replace(/^#+ /gm, "");
+
 type Msg = { role: "user" | "assistant"; text: string };
 const STARTERS = ["Explain my results in plain words", "Why did I lose sales or have unsold stock?", "What should I change next quarter?", "How am I doing against my rivals?"];
 
@@ -54,7 +57,7 @@ export default function Advisor({ t, idx, teams }: { t: Team; idx: number; teams
       {msgs.length > 0 && (
         <div className="mt-4 grid max-h-[28rem] gap-3 overflow-y-auto" aria-live="polite">
           {msgs.map((m, i) => (
-            <div key={i} className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-6 ${m.role === "user" ? "ml-auto bg-brand text-white" : "bg-slate-100 text-ink"}`}>{m.text}</div>
+            <div key={i} className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-6 ${m.role === "user" ? "ml-auto bg-brand text-white" : "bg-slate-100 text-ink"}`}>{m.role === "assistant" ? clean(m.text) : m.text}</div>
           ))}
           {busy && <div className="w-fit rounded-2xl bg-slate-100 px-4 py-3 text-sm text-mute">Thinking…</div>}
         </div>

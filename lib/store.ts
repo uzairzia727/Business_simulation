@@ -139,3 +139,31 @@ export function economyBrief() {
   return { scenario: s.name, meaning: s.desc, gdpIndex: e.gdp, interestRate: `${s.rate * 100}%`, inflation: `${s.inflation * 100}%`, demandVsNormal: `${Math.round((s.demand - 1) * 100)}%`,
     regulatorPoliciesInForce: (e.policies ?? []).map((p) => `${POLICIES[p].name}: ${POLICIES[p].rule}`) };
 }
+
+// ---------- Win record: every finished game is kept in this browser ----------
+export type GameRecord = {
+  id: string; date: string; name: string; quarters: number;
+  standings: { team: number; role: string; total: number; ksf?: number; ai?: boolean }[];
+  economy: string[];
+};
+const GAMES_KEY = "strataSimHallOfFame";
+
+export function loadGames(): GameRecord[] {
+  try { const g = JSON.parse(localStorage.getItem(GAMES_KEY) || "[]"); return Array.isArray(g) ? g : []; } catch { return []; }
+}
+export function saveGames(g: GameRecord[]) { try { localStorage.setItem(GAMES_KEY, JSON.stringify(g)); } catch {} }
+
+// Record the current game: standings by total profit across all quarters played (closed quarters + the current one).
+export function recordGame(teams: Team[], name: string): GameRecord {
+  const standings = teams.map((t, i) => ({
+    team: i + 1, role: ROLES[i].name, ai: !!t.aiRun, ksf: t.ksf?.overall,
+    total: Math.round((t.history ?? []).reduce((s, h) => s + h.net, 0) + (t.report?.net ?? 0)),
+  })).sort((a, b) => b.total - a.total);
+  const h = teams[0].history ?? [];
+  const game: GameRecord = {
+    id: String(Date.now()), date: new Date().toISOString(), name: name.trim() || `Game ${loadGames().length + 1}`,
+    quarters: h.length + 1, standings, economy: [...h.map((x) => x.scenario ?? "Stable economy"), teams[0].report?.econ?.name ?? "Stable economy"],
+  };
+  saveGames([game, ...loadGames()]);
+  return game;
+}

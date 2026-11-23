@@ -5,7 +5,7 @@ import Regulator from "./Regulator";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { DEFAULT_ECON, KSF, OPEN, REGION_ROWS, ROLES, Report, Team, fmt, gbp } from "@/lib/sim";
-import { useTeams } from "@/lib/store";
+import { recordGame, useTeams } from "@/lib/store";
 import RoleIcon, { ROLE_BAR } from "./RoleIcon";
 import Competitors from "./Competitors";
 
@@ -52,6 +52,13 @@ export default function Reports() {
           <button className="btn btn-accent" onClick={() => { if (confirm(`Close ${now} for all 8 companies? Results are locked in and the next quarter starts from each company's closing position.`)) closeQuarter(teams); }}>Close quarter &amp; start next</button>
           <button className="btn" onClick={() => generateAll(teams.map((x) => ({ ...x, report: null })))}>Recalculate</button>
           <button className="btn btn-primary" onClick={() => window.print()}>Save as PDF</button>
+          <button className="btn" onClick={() => {
+            const name = prompt("Finish this game and record the winner in the Hall of fame. Game name (optional):", "");
+            if (name === null) return;
+            recordGame(teams, name);
+            if (confirm("Winner recorded. Start a new game from Quarter 1 now?")) { setEcon(DEFAULT_ECON, false); generateAll(teams.map(() => ({ year: "", quarter: "", simCode: "", groupNo: "", d: {}, report: null })), DEFAULT_ECON); }
+            router.push("/hall-of-fame");
+          }}>Finish game</button>
           <button className="btn btn-danger" onClick={() => { if (confirm("Restart the whole simulation from Quarter 1? All quarters and edits will be lost.")) { setEcon(DEFAULT_ECON, false); generateAll(teams.map(() => ({ year: "", quarter: "", simCode: "", groupNo: "", d: {}, report: null })), DEFAULT_ECON); } }}>Reset all</button>
         </div>
       </div>

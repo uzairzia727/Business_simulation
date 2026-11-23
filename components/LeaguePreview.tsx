@@ -1,4 +1,5 @@
 "use client";
+import { useIndustry } from "@/lib/useIndustry";
 import Link from "next/link";
 import { useEffect } from "react";
 import { ROLES, gbp } from "@/lib/sim";
@@ -8,6 +9,7 @@ import RoleIcon from "./RoleIcon";
 const MEDAL = ["bg-brand text-white", "bg-stone-200 text-ink", "bg-stone-200 text-ink"];
 
 export default function LeaguePreview() {
+  const { company } = useIndustry();
   const { teams, ready, generateAll } = useTeams();
   useEffect(() => { if (ready && teams.some((t) => !t.report)) generateAll(teams); }, [ready, teams, generateAll]);
   const top = ready && teams.every((t) => t.report)
@@ -25,8 +27,8 @@ export default function LeaguePreview() {
             <span className={`grid size-7 place-items-center rounded-full text-xs font-bold ${MEDAL[k]}`}>{k + 1}</span>
             <RoleIcon i={i} size="size-9" />
             <span className="min-w-0 flex-1 leading-tight">
-              <span className="block text-sm font-semibold">Team {i + 1}</span>
-              <span className="block truncate text-xs text-mute">{ROLES[i].name}</span>
+              <span className="block truncate text-sm font-semibold">{company(i)}</span>
+              <span className="block truncate text-xs text-mute">Team {i + 1} · {ROLES[i].name}</span>
             </span>
             <span className="text-right text-sm font-bold tabular-nums text-brand">{Number.isNaN(net) ? "…" : gbp(net)}</span>
           </li>

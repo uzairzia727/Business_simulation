@@ -262,11 +262,19 @@ function attractiveness(d: Num, pos: Position, g: number, p: number, ag?: Agents
 
 // Units a company can sell in each region: this quarter's deliveries plus stock carried in (spread like deliveries).
 function available(d: Num, pos: Position): Grid {
-  return REGION_ROWS.map((row, g) => [0, 1, 2].map((p) => {
+  const grid = REGION_ROWS.map(() => [0, 0, 0]);
+  [0, 1, 2].forEach((p) => {
     const total = REGION_ROWS.reduce((s, r) => s + d[r[p + 1]], 0);
-    const share = total > 0 ? d[row[p + 1]] / total : g === 0 ? 1 : 0;
-    return d[row[p + 1]] + Math.round(pos.fg[p] * share);
-  }));
+    let left = Math.round(pos.fg[p]);
+    REGION_ROWS.forEach((row, g) => {
+      const share = total > 0 ? d[row[p + 1]] / total : g === 0 ? 1 : 0;
+      // Floor each region's share of carried stock; the last region takes the remainder, so the parts add up exactly.
+      const carry = g === REGION_ROWS.length - 1 ? left : Math.min(left, Math.floor(pos.fg[p] * share));
+      left -= carry;
+      grid[g][p] = d[row[p + 1]] + carry;
+    });
+  });
+  return grid;
 }
 
 export function market(all: { d: Values; pos?: Position; agents?: Agents; hr?: HR; channels?: PlanRow[] | null }[], econ?: Econ) {

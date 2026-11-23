@@ -1,7 +1,7 @@
 "use client";
 import { Econ, SCENARIOS, ScenarioId, Team, gbp } from "@/lib/sim";
 import Typewriter from "./Typewriter";
-import { INDUSTRIES, IndustryId, industryOf } from "@/lib/industry";
+import { DEFAULT_INDUSTRY, INDUSTRIES, IndustryId, industryOf } from "@/lib/industry";
 
 const IDS = Object.keys(SCENARIOS) as ScenarioId[];
 const pct = (x: number, dp = 1) => `${(x * 100).toFixed(dp)}%`;
@@ -47,7 +47,7 @@ export default function Economy({ teams, econ, setEcon, readOnly }: { teams: Tea
       <div className="no-print mt-4 rounded-md border border-line bg-stone-50 p-3">
         <label className="text-sm font-semibold" htmlFor="industry">Industry</label>
         <div className="mt-1 flex flex-wrap items-center gap-3">
-          <select id="industry" className="input w-56" value={econ.industry ?? "manufacturing"}
+          <select id="industry" className="input w-56" value={econ.industry ?? DEFAULT_INDUSTRY}
             onChange={(e) => { if (confirm(`Switch the whole game to ${INDUSTRIES[e.target.value as IndustryId].name}? Products, markets, the regulator and market behaviour change for all 8 companies. Best done at the start of a game.`)) setEcon({ ...econ, industry: e.target.value }); }}>
             {(Object.keys(INDUSTRIES) as IndustryId[]).map((id) => <option key={id} value={id}>{INDUSTRIES[id].name}</option>)}
           </select>

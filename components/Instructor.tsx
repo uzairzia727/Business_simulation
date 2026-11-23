@@ -1,4 +1,5 @@
 "use client";
+import { useIndustry } from "@/lib/useIndustry";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -26,6 +27,7 @@ export function Announcement({ econ }: { econ: Econ }) {
 }
 
 export default function Instructor() {
+  const { company } = useIndustry();
   const router = useRouter();
   const { teams, ready, save, generateAll, closeQuarter, runCompetitors, econ, setEcon } = useTeams();
   const [ok, setOk] = useState(false);
@@ -93,7 +95,7 @@ export default function Instructor() {
             <tbody>
               {teams.map((t, i) => (
                 <tr key={i}>
-                  <td className="!text-left"><span className="flex items-center gap-3"><RoleIcon i={i} size="size-8" /><span><span className="block font-semibold">Team {i + 1}</span><span className="block text-xs text-mute">{ROLES[i].name}</span></span></span></td>
+                  <td className="!text-left"><span className="flex items-center gap-3"><RoleIcon i={i} size="size-8" /><span><span className="block font-semibold">{company(i)}</span><span className="block text-xs text-mute">Team {i + 1} · {ROLES[i].name}</span></span></span></td>
                   <td>{t.aiRun ? "AI" : "Human"}</td>
                   <td>{t.touched ? "Edited" : "Role default"}</td>
                   <td className={t.report!.net < 0 ? "text-red-700" : ""}>{gbp(t.report!.net)}</td>

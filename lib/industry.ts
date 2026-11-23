@@ -13,6 +13,9 @@ export const INDUSTRIES = {
     name: "Real estate", blurb: "Develop and sell homes and commercial property across Pakistan's cities.",
     products: ["Apartments", "Commercial plots", "Luxury villas"], short: ["Apartments", "Commercial", "Villas"],
     regions: ["Overseas Pakistanis", "Karachi", "Lahore", "Islamabad"], regulator: "Capital Development Authority (CDA)",
+    // Fictional developers, one per strategist role (not real companies).
+    companies: ["Margalla Affordable Homes", "Kohsar Luxury Estates", "Overseas Gateway Developers", "Pothohar Homes", "Silicon Square Developers", "Blue Area Realty", "Rawal Build & Construct", "Safe Haven Properties"],
+    sections: { marketing: "Sales & marketing", operations: "Projects & construction", personnel: "People", finance: "Finance", management: "Finance" },
     elasticity: 1.1, rateSens: 2.5, cyclical: 1.3,
     words: { "Raw material": "Construction material", "raw material": "construction material", "Assembly": "Construction", "Workers": "Site workers", "workers": "site workers", "Machines": "Construction equipment", "machines": "construction equipment", "Salespeople": "Property agents", "Daraz & online marketplaces": "Zameen.com & property portals", "Units": "Units", "Quality standards": "Building codes", "Price cap": "Price cap" },
   },
@@ -32,7 +35,13 @@ export const INDUSTRIES = {
   },
 } as const;
 export type IndustryId = keyof typeof INDUSTRIES;
-export const industryOf = (id?: string) => INDUSTRIES[(id as IndustryId) in INDUSTRIES ? (id as IndustryId) : "manufacturing"];
+export const DEFAULT_INDUSTRY: IndustryId = "realEstate";
+export const industryOf = (id?: string) => INDUSTRIES[(id as IndustryId) in INDUSTRIES ? (id as IndustryId) : DEFAULT_INDUSTRY];
+// Company name shown for team i: a realistic name where the industry defines one, otherwise "Company n".
+export const companyName = (i: number, id?: string) => {
+  const ind = industryOf(id) as { companies?: readonly string[] };
+  return ind.companies?.[i] ?? `Company ${i + 1}`;
+};
 
 // Re-word any label for the chosen industry: products, regions, then sector words.
 export function term(text: string, id?: string) {

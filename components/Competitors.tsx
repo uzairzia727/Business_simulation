@@ -1,4 +1,5 @@
 "use client";
+import { useIndustry } from "@/lib/useIndustry";
 import Typewriter, { RobotWriting } from "./Typewriter";
 import { useState } from "react";
 import { ROLES, Team } from "@/lib/sim";
@@ -9,6 +10,7 @@ export default function Competitors({ teams, save, run }: {
   teams: Team[]; save: (t: Team[]) => void;
   run: (base: Team[], onProgress: (m: string) => void) => Promise<string[]>;
 }) {
+  const { company } = useIndustry();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
@@ -43,8 +45,8 @@ export default function Competitors({ teams, save, run }: {
             className={`flex items-center gap-3 rounded-xl border p-3 text-left transition ${t.aiRun ? "border-brand bg-[#eaf0ec]" : "border-line hover:bg-stone-50"}`}>
             <RoleIcon i={i} size="size-9" />
             <span className="min-w-0 flex-1 leading-tight">
-              <span className="block text-sm font-semibold">Team {i + 1}</span>
-              <span className="block truncate text-xs text-mute">{ROLES[i].name}</span>
+              <span className="block truncate text-sm font-semibold">{company(i)}</span>
+              <span className="block truncate text-xs text-mute">Team {i + 1} · {ROLES[i].name}</span>
             </span>
             <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${t.aiRun ? "bg-brand text-white" : "bg-stone-100 text-slate-700"}`}>{t.aiRun ? "AI" : "Human"}</span>
           </button>
@@ -59,7 +61,7 @@ export default function Competitors({ teams, save, run }: {
         <div className="mt-4 grid gap-2">
           <h3 className="text-sm font-semibold">Latest AI reasoning</h3>
           {teams.map((t, i) => t.aiRun && t.aiNote ? (
-            <p key={i} className="rounded-xl bg-stone-50 px-4 py-3 text-sm"><span className="font-semibold">Team {i + 1}:</span> <Typewriter text={t.aiNote} speed={14} className="inline-grid" /></p>
+            <p key={i} className="rounded-xl bg-stone-50 px-4 py-3 text-sm"><span className="font-semibold">{company(i)}:</span> <Typewriter text={t.aiNote} speed={14} className="inline-grid" /></p>
           ) : null)}
         </div>
       )}

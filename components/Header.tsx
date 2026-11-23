@@ -1,4 +1,5 @@
 "use client";
+import { useIndustry } from "@/lib/useIndustry";
 import Logo from "./Logo";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,6 +9,7 @@ import { ROLES } from "@/lib/sim";
 const LINKS = [["/", "Home"], ["/guide", "Guide"], ["/reports", "Reports"], ["/hall-of-fame", "Hall of fame"], ["/instructor", "Instructor"]] as const;
 
 export default function Header() {
+  const { company } = useIndustry();
   const path = usePathname();
   const [menu, setMenu] = useState(false);
   const [teams, setTeams] = useState(false);
@@ -48,8 +50,8 @@ export default function Header() {
                   <Link key={r.name} href={`/team/${i + 1}`}
                     className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 hover:bg-stone-100 ${path === `/team/${i + 1}` ? "bg-[#eaf0ec]" : ""}`}>
                     <span className="grid size-7 shrink-0 place-items-center rounded-md bg-brand text-xs font-bold text-white">{i + 1}</span>
-                    <span className="leading-tight"><span className="block text-sm font-semibold text-ink">Team {i + 1}</span>
-                      <span className="block text-xs text-mute">{r.name}</span></span>
+                    <span className="leading-tight"><span className="block text-sm font-semibold text-ink">{company(i)}</span>
+                      <span className="block text-xs text-mute">Team {i + 1} · {r.name}</span></span>
                   </Link>
                 ))}
               </div>

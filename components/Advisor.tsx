@@ -25,6 +25,7 @@ function context(t: Team, idx: number, teams: Team[]) {
     },
     history: t.history ?? [],
     economy: economyBrief(),
+    marketingChannels: t.channels?.length ? { plan: t.channels.map(({ channel, p1, p2, p3 }) => ({ channel, p1, p2, p3 })), effectivenessByProduct: r.channelMix?.map((m) => `${Math.round(m.mult * 100)}%`), exportReach: r.channelMix?.map((m) => `${Math.round(m.exportShare * 100)}%`) } : "classic marketing levers",
     hr: { managers: Object.entries(t.hr?.managers ?? {}).map(([k, m]) => ({ position: k, name: m?.name, skill: m?.skill, salary: m?.salary })), managementSalaries: Math.round(r.managerSalaries), workers: r.workers, leaving: r.leavers, turnoverRate: `${(r.turnover * 100).toFixed(1)}%` },
     keySuccessFactors: t.ksf ? { overallScore: t.ksf.overall, factors: KSF.map((k, j) => ({ factor: k.name, measure: k.unit, value: Math.round(t.ksf!.items[j].value * 100) / 100, rankOf8: t.ksf!.items[j].rank, score: t.ksf!.items[j].score })) } : null,
     rivals: teams.map((x, i) => x.report && i !== idx ? { company: `Team ${i + 1}`, strategy: ROLES[i].name, revenue: round(x.report.revenue), netProfit: round(x.report.net), unitsSold: x.report.soldU.reduce((a, b) => a + b, 0) } : null).filter(Boolean),

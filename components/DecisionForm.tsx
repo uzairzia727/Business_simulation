@@ -27,7 +27,7 @@ export default function DecisionForm({ idx }: { idx: number }) {
     save(next);
     setMsg("Saved");
   };
-  const setD = (id: string, v: string) => update({ d: { ...t.d, [id]: v } });
+  const setD = (id: string, v: string) => update({ d: { ...t.d, [id]: v }, ...(/^p[123](advert|trade|merch)$/.test(id) ? { channels: null } : {}) });
   const missing = ALL_IDS.filter((id) => isBlank(t.d[id])).concat(META.filter(([k]) => isBlank(t[k])).map(([k]) => k));
   const bad = (id: string) => showErr && isBlank(id in t.d ? t.d[id] : t[id as keyof Team]);
 
@@ -72,7 +72,7 @@ export default function DecisionForm({ idx }: { idx: number }) {
         <button className="btn btn-danger ml-auto" onClick={() => { if (confirm(`Clear every decision for Team ${idx + 1}?`)) { const next = [...teams]; next[idx] = { ...emptyTeam(), touched: true }; save(next); setMsg("Cleared"); } }}>Clear</button>
       </div>
 
-      <MarketingAgent t={t} idx={idx} apply={(d) => { update({ d: { ...t.d, ...d } }); setMsg("Marketing plan applied"); }} />
+      <MarketingAgent t={t} idx={idx} apply={(d, plan) => { update({ d: { ...t.d, ...d }, channels: plan }); setMsg("Channel plan applied"); }} />
       <HRPanel t={t} idx={idx} update={(patch) => { update(patch); setMsg("HR updated"); }} />
 
       <section className="card mt-6">

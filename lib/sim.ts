@@ -1,3 +1,4 @@
+import { channelMix, type PlanRow } from "./marketing";
 export type Group = "marketing" | "operations" | "finance" | "personnel" | "management";
 export type Field = [id: string, label: string, group: Group, benchmark: number];
 export type Values = Record<string, string>;
@@ -117,7 +118,7 @@ export function roleData(i: number): Values {
 
 export type Meta = { year: string; quarter: string; simCode: string; groupNo: string };
 export type QuarterSummary = { label: string; revenue: number; net: number; cash: number; share: number; scenario?: string; ksf?: number };
-export type Team = Meta & { d: Values; report: Report | null; touched?: boolean; agents?: Agents; aiRun?: boolean; aiNote?: string; ai?: ReturnType<typeof agentImpact>; ksf?: { items: KsfScore[]; overall: number }; hr?: HR; pos?: Position; history?: QuarterSummary[] };
+export type Team = Meta & { d: Values; report: Report | null; touched?: boolean; agents?: Agents; aiRun?: boolean; aiNote?: string; ai?: ReturnType<typeof agentImpact>; ksf?: { items: KsfScore[]; overall: number }; hr?: HR; channels?: PlanRow[] | null; pos?: Position; history?: QuarterSummary[] };
 
 export const isBlank = (v: unknown) => v === null || v === undefined || String(v).trim() === "";
 const n = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : 0);
@@ -233,21 +234,23 @@ export type Grid = number[][]; // [region][product]
 type Num = Record<string, number>;
 const toNum = (raw: Values): Num => Object.fromEntries(ALL_IDS.map((id) => [id, n(raw[id])]));
 
-export function brand(d: Num, pos: Position, p: number, rnd = 0) {
+export function brand(d: Num, pos: Position, p: number, rnd = 0, chMult = 1) {
   const promo = (d[`p${p + 1}advert`] + d[`p${p + 1}trade`] + d[`p${p + 1}merch`]) /
     (BENCH[`p${p + 1}advert`] + BENCH[`p${p + 1}trade`] + BENCH[`p${p + 1}merch`]);
   return {
-    goodwill: 0.5 * pos.goodwill[p] + 0.5 * promo,
+    goodwill: 0.5 * pos.goodwill[p] + 0.5 * promo * chMult,
     quality: 0.75 * pos.quality[p] + 0.25 * (d[`research${p + 1}`] / BENCH[`research${p + 1}`]) * (1 + 0.3 * rnd),
     improved: Math.max(pos.improved[p], Math.min(1, Math.max(0, d[`major${p + 1}`]))),
   };
 }
 
-function attractiveness(d: Num, pos: Position, g: number, p: number, ag?: Agents, elasticity = 2.5, econ?: Econ, hr?: HR) {
+function attractiveness(d: Num, pos: Position, g: number, p: number, ag?: Agents, elasticity = 2.5, econ?: Econ, hr?: HR, mix?: ReturnType<typeof channelMix>) {
   const priceKey = `p${p + 1}${g === 0 ? "export" : "home"}`;
-  const b = brand(d, pos, p, mg(hr, "rnd"));
+  const b = brand(d, pos, p, mg(hr, "rnd"), mix?.[p].mult ?? 1);
+  // Channels with an overseas audience help export sales; home-only channels help home regions (0.25 = neutral mix).
+  const reach = mix ? (g === 0 ? 0.85 + 0.6 * mix[p].exportShare : 1.05 - 0.2 * mix[p].exportShare) : 1;
   const price = Math.max(1, d[priceKey]) / BENCH[priceKey];
-  const marketing = Math.max(0.05, b.goodwill * (1 + 0.15 * mg(hr, "mkt")));
+  const marketing = Math.max(0.05, b.goodwill * (1 + 0.15 * mg(hr, "mkt")) * reach);
   const coverage = Math.max(0.1, (d[SALES_KEY[g]] * (on(ag, "ls") ? 1.15 : 1) * (1 + 0.12 * mg(hr, "sales"))) / BENCH[SALES_KEY[g]]);
   const quality = (1 + 0.12 * b.improved) * Math.max(0.2, b.quality) ** 0.25;
   const credit = (Math.max(10, d.credit) / BENCH.credit) ** 0.1;
@@ -264,16 +267,17 @@ function available(d: Num, pos: Position): Grid {
   }));
 }
 
-export function market(all: { d: Values; pos?: Position; agents?: Agents; hr?: HR }[], econ?: Econ) {
+export function market(all: { d: Values; pos?: Position; agents?: Agents; hr?: HR; channels?: PlanRow[] | null }[], econ?: Econ) {
   const e = sc(econ);
   const ds = all.map((t) => regulate(toNum(t.d), econ));
+  const mixes = all.map((t) => channelMix(t.channels));
   const ps = all.map((t) => t.pos ?? initialPosition());
   const k = ds.length;
   const demand: Grid[] = ds.map(() => REGION_ROWS.map(() => [0, 0, 0]));
   const sold: Grid[] = ds.map(() => REGION_ROWS.map(() => [0, 0, 0]));
   const avail = ds.map((d, i) => available(d, ps[i]));
   REGION_ROWS.forEach((_, g) => [0, 1, 2].forEach((p) => {
-    const at = ds.map((d, i) => attractiveness(d, ps[i], g, p, all[i].agents, e.elasticity, econ, all[i].hr));
+    const at = ds.map((d, i) => attractiveness(d, ps[i], g, p, all[i].agents, e.elasticity, econ, all[i].hr, mixes[i]));
     const sumA = at.reduce((s, x) => s + x.a, 0) || 1;
     const avgPrice = at.reduce((s, x) => s + x.price, 0) / k;
     const avgMkt = at.reduce((s, x) => s + x.marketing, 0) / k;
@@ -303,10 +307,10 @@ export function market(all: { d: Values; pos?: Position; agents?: Agents; hr?: H
   return { demand, sold, adjusted };
 }
 
-type Run = { d: Values; quarter: string; pos?: Position; agents?: Agents; hr?: HR };
+type Run = { d: Values; quarter: string; pos?: Position; agents?: Agents; hr?: HR; channels?: PlanRow[] | null };
 export function calculateAll(all: Run[], econ?: Econ) {
   const m = market(all, econ);
-  return all.map((t, i) => calculate(m.adjusted[i], t.quarter, m.sold[i], m.demand[i], t.pos, t.agents, econ, t.hr));
+  return all.map((t, i) => calculate(m.adjusted[i], t.quarter, m.sold[i], m.demand[i], t.pos, t.agents, econ, t.hr, t.channels));
 }
 
 // With-vs-without comparison: rerun the market with one company's agents changed, rivals unchanged.
@@ -325,7 +329,8 @@ export function agentImpact(all: Run[], i: number, econ?: Econ) {
 
 export type Report = ReturnType<typeof calculate>;
 
-export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Grid, demandIn?: Grid, posIn?: Position, ag?: Agents, econ?: Econ, hr?: HR) {
+export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Grid, demandIn?: Grid, posIn?: Position, ag?: Agents, econ?: Econ, hr?: HR, channels?: PlanRow[] | null) {
+  const mix = channelMix(channels);
   const pos = posIn ?? initialPosition();
   const e = sc(econ);
   const d = regulate(toNum(raw), econ);
@@ -411,7 +416,7 @@ export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Gr
   const reserves = pos.reserves + net - dividend;
   const netAssets = OPEN.property + machineNBV + vehicleNBV + matValue + fgValue + debtors + cashShown - creditors - overdraft;
   const mNeed = u[0] * OPEN.mhrs[0] + u[1] * OPEN.mhrs[1] + u[2] * OPEN.mhrs[2];
-  const brands = [0, 1, 2].map((p) => brand(d, pos, p, mg(hr, "rnd")));
+  const brands = [0, 1, 2].map((p) => brand(d, pos, p, mg(hr, "rnd"), mix?.[p].mult ?? 1));
   const close: Position = {
     cash, debtors, creditors, machines, vans, workers: workers - leavers, materialStock, fg: unsold, fgValue, matValue, machineNBV, vehicleNBV, reserves,
     quality: brands.map((b) => b.quality), goodwill: brands.map((b) => b.goodwill), improved: brands.map((b) => b.improved),
@@ -423,7 +428,7 @@ export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Gr
   if (fines) notices.push(`Advertising Rs ${adExcess}k over the limit: fined ${gbp(fines)}.`);
   if (has(econ, "standards")) brands.forEach((b, p) => { if (b.quality < QUALITY_STD) notices.push(`Product ${p + 1} failed quality standards (index ${b.quality.toFixed(2)}): 20% fewer customers. Spend more on research.`); });
   return {
-    fines, notices, managerSalaries, leavers, turnover,
+    fines, notices, managerSalaries, leavers, turnover, channelMix: mix,
     agentsOn, agentCost, u, soldU, demandU, unsold, lostSales, fgValue, productionCost, sold, demand, revenue,
     materialsConsumedCost, materialsPurchased, wages, otHours, hoursReq, hoursCap,
     advert, trade, merch, research, salesSalary, commission, mgmt, sellingOH, adminOH, prodOH,

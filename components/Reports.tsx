@@ -1,5 +1,6 @@
 "use client";
 import Typewriter from "./Typewriter";
+import { CHANNELS } from "@/lib/marketing";
 import Economy from "./Economy";
 import Regulator from "./Regulator";
 import { useRouter } from "next/navigation";
@@ -194,6 +195,14 @@ export function TeamReport({ t, idx, controls }: { t: Team; idx: number; control
             <Block title="Units delivered by region">
               <Table head={["Region", "P1", "P2", "P3"]} rows={REGION_ROWS.map((row) => [row[0], ...row.slice(1).map((k) => fmt(d[k]))])} />
             </Block>
+            {t.channels?.length ? (
+              <Block title="Marketing channels">
+                <Table head={["Channel", "P1", "P2", "P3", "Total"]} rows={[
+                  ...t.channels.map((c) => [CHANNELS.find((x) => x.id === c.channel)?.name ?? c.channel, c.p1, c.p2, c.p3, c.p1 + c.p2 + c.p3]),
+                  ["Effectiveness vs classic", ...(r.channelMix ?? []).map((m) => `${Math.round(m.mult * 100)}%`), ""],
+                  ["Share of reach abroad", ...(r.channelMix ?? []).map((m) => `${Math.round(m.exportShare * 100)}%`), ""]]} />
+              </Block>
+            ) : null}
             <Block title="People">
               <Table head={["Measure", "Value"]} rows={[["Managers in post", Object.values(t.hr?.managers ?? {}).map((m) => m?.name).join(", ") || "None"],
                 ["Management salaries (incl. severance)", gbp(r.managerSalaries)], ["Workers", fmt(r.workers)], ["Workers expected to leave", `${r.leavers} (${(r.turnover * 100).toFixed(1)}%)`]]} />

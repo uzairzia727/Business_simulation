@@ -6,10 +6,12 @@ const MODEL = process.env.COMPETITOR_MODEL || "openai/gpt-oss-20b";
 
 const SYSTEM = `You are the AI marketing manager of one company in StrataSim, a business strategy simulation in Pakistan
 (currency Rs, amounts in Rs 000). The company sells Products 1, 2 and 3 (3 is the premium product).
-Split the quarter's marketing budget across the allowed channels and products. Favour products with lost sales or
+Split the quarter's marketing budget across the allowed channels and products.
+Spend beyond a channel's saturation point is mostly wasted, so spread money across channels that fit each product;
+use export-reaching channels for products that sell abroad. Favour products with lost sales or
 strong margins, cut spend on products with unsold stock, and match the company's strategist role.
 Channels:
-${CHANNELS.map((c) => `${c.id}: ${c.name} — ${c.note}`).join("\n")}
+${CHANNELS.map((c) => `${c.id}: ${c.name} — ${c.note}; fit for P1/P2/P3 ${c.fit.join("/")} (1 = average); ${Math.round(c.export * 100)}% export reach; saturates around Rs ${c.sat}k per product`).join("\n")}
 Respond with JSON only:
 {"reasoning":"<max 45 words>","plan":[{"channel":"<id>","p1":<Rs 000>,"p2":<Rs 000>,"p3":<Rs 000>,"ad":"<ad line, max 14 words>"}]}
 Use only allowed channel ids. The total of all p1+p2+p3 must not exceed the budget.`;

@@ -1,12 +1,13 @@
 import { LogoMark } from "@/components/Logo";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Source_Serif_4 } from "next/font/google";
 import Link from "next/link";
 import Header from "@/components/Header";
 import Advisor from "@/components/Advisor";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
+const serif = Source_Serif_4({ variable: "--font-serif-head", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "StrataSim | Business Strategy Simulation",
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} flex min-h-dvh flex-col font-sans antialiased`}>
+      <body className={`${inter.variable} ${serif.variable} flex min-h-dvh flex-col font-sans antialiased`}>
         <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:p-2">Skip to content</a>
         <Header />
         <main id="main" className="flex-1">{children}</main>

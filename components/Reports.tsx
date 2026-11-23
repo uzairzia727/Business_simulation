@@ -63,8 +63,8 @@ export default function Reports() {
             <thead><tr><th>Rank</th><th>Company</th><th>Revenue</th><th>Net profit (this quarter)</th><th>Total profit</th><th>Market share</th><th>Closing cash</th></tr></thead>
             <tbody>
               {league.map(({ i, r: x, total: tot }, k) => (
-                <tr key={i} onClick={() => pick(i)} className={`cursor-pointer hover:bg-slate-50`}>
-                  <td><span className={`inline-grid size-7 place-items-center rounded-full text-xs font-bold ${k === 0 ? "bg-accent text-ink" : "bg-slate-100"}`}>{k + 1}</span></td>
+                <tr key={i} onClick={() => pick(i)} className={`cursor-pointer hover:bg-stone-50`}>
+                  <td><span className={`inline-grid size-7 place-items-center rounded-full text-xs font-bold ${k === 0 ? "bg-accent text-ink" : "bg-stone-100"}`}>{k + 1}</span></td>
                   <td className="!text-left"><div className="flex items-center gap-3"><RoleIcon i={i} size="size-9" /><div><button className="text-left font-semibold text-brand hover:underline" onClick={() => pick(i)}>Team {i + 1}</button>
                     <span className="block text-xs text-mute">{ROLES[i].name}{teams[i].aiRun ? " · AI" : ""}</span></div></div></td>
                   <td>{gbp(x.revenue)}</td><td className={x.net < 0 ? "text-red-700" : ""}>{gbp(x.net)}</td>
@@ -87,7 +87,7 @@ export default function Reports() {
             return (
               <button key={i} onClick={() => pick(i)} className="grid grid-cols-[6.5rem_1fr_auto] items-center gap-3 text-left text-sm" tabIndex={-1}>
                 <span className="truncate font-medium">Team {i + 1}</span>
-                <span className="h-6 rounded-md bg-slate-100"><span className={`block h-full rounded-md ${ROLE_BAR[i]} transition-[width] duration-500`} style={{ width: `${Math.max(2, (Math.abs(x.net) / max) * 100)}%` }} /></span>
+                <span className="h-6 rounded-md bg-stone-100"><span className={`block h-full rounded-md ${ROLE_BAR[i]} transition-[width] duration-500`} style={{ width: `${Math.max(2, (Math.abs(x.net) / max) * 100)}%` }} /></span>
                 <span className="w-28 text-right font-semibold tabular-nums">{gbp(x.net)}</span>
               </button>
             );
@@ -236,7 +236,7 @@ function AiBlock({ t }: { t: Team }) {
         {ai.each.map((e) => (
           <div key={e.id} className="grid grid-cols-[9.5rem_1fr_6.5rem] items-center gap-3 text-sm">
             <span className="truncate">{e.name}</span>
-            <span className="h-4 rounded bg-slate-100"><span className={`block h-full rounded ${e.value >= 0 ? "bg-brand" : "bg-red-500"}`} style={{ width: `${Math.max(2, (Math.abs(e.value) / max) * 100)}%` }} /></span>
+            <span className="h-4 rounded bg-stone-100"><span className={`block h-full rounded ${e.value >= 0 ? "bg-brand" : "bg-red-500"}`} style={{ width: `${Math.max(2, (Math.abs(e.value) / max) * 100)}%` }} /></span>
             <span className={`text-right font-semibold tabular-nums ${e.value < 0 ? "text-red-700" : ""}`}>{e.value >= 0 ? "+" : "−"}{gbp(Math.abs(e.value)).replace("−", "")}</span>
           </div>
         ))}

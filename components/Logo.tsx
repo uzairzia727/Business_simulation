@@ -4,10 +4,10 @@ export function LogoMark({ className = "size-9" }: { className?: string }) {
     <svg viewBox="0 0 40 40" className={className} aria-hidden="true">
       <defs>
         <linearGradient id="ss-bg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#3b82f6" /><stop offset="1" stopColor="#1e3a8a" />
+          <stop offset="0" stopColor="#2f6b52" /><stop offset="1" stopColor="#1f4d3a" />
         </linearGradient>
         <linearGradient id="ss-top" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#fcd34d" /><stop offset="1" stopColor="#fb923c" />
+          <stop offset="0" stopColor="#ffffff" /><stop offset="1" stopColor="#d9e8df" />
         </linearGradient>
       </defs>
       <rect width="40" height="40" rx="10" fill="url(#ss-bg)" />
@@ -25,9 +25,9 @@ export default function Logo({ dark = true }: { dark?: boolean }) {
       <LogoMark />
       <span className="leading-tight">
         <span className={`block text-lg font-extrabold tracking-tight ${dark ? "text-white" : "text-brand-dark"}`}>
-          Strata<span className="text-amber-300">Sim</span>
+          Strata<span className="text-[#a9c8b8]">Sim</span>
         </span>
-        <span className={`block text-[10px] font-semibold uppercase tracking-[.18em] ${dark ? "text-blue-200" : "text-mute"}`}>Business Strategy Simulation</span>
+        <span className={`block text-[10px] font-semibold uppercase tracking-[.18em] ${dark ? "text-stone-400" : "text-mute"}`}>Business Strategy Simulation</span>
       </span>
     </span>
   );

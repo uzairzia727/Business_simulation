@@ -2,30 +2,32 @@
 
 @theme inline {
   --font-sans: var(--font-inter);
-  --color-brand: #1e40af;
-  --color-brand-dark: #0f2a4a;
-  --color-accent: #f59e0b;
-  --color-ink: #0f172a;
-  --color-mute: #475569;
-  --color-line: #dbe2ec;
-  --color-paper: #f5f7fb;
+  --font-serif: var(--font-serif-head);
+  --color-brand: #1f4d3a;
+  --color-brand-dark: #16241d;
+  --color-accent: #16241d;
+  --color-ink: #1c1917;
+  --color-mute: #57534e;
+  --color-line: #e2ded6;
+  --color-paper: #f7f6f2;
 }
 
 body { background: var(--color-paper); color: var(--color-ink); }
 /* Let grid items shrink so wide tables scroll inside their card instead of widening the page on phones. */
 .grid > * { min-width: 0; }
+h1, h2 { font-family: var(--font-serif-head), Georgia, serif; font-weight: 600; letter-spacing: -0.01em; }
 
 @layer components {
   .wrap { @apply mx-auto w-full max-w-6xl px-4 sm:px-6; }
-  .btn { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-line bg-white px-4 text-sm font-semibold text-ink shadow-sm transition hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand cursor-pointer; }
-  .btn-primary { @apply border-brand bg-brand text-white hover:bg-blue-900; }
-  .btn-accent { @apply border-amber-600 bg-accent text-ink hover:bg-amber-400; }
+  .btn { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-line bg-white px-4 text-sm font-semibold text-ink transition hover:bg-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand cursor-pointer; }
+  .btn-primary { @apply border-brand bg-brand text-white hover:bg-brand-dark; }
+  .btn-accent { @apply border-brand-dark bg-brand-dark text-white hover:bg-black; }
   .btn-danger { @apply border-red-200 bg-red-50 text-red-800 hover:bg-red-100; }
-  .card { @apply rounded-2xl border border-line bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,.05),0_8px_24px_rgba(15,23,42,.06)]; }
-  .input { @apply h-10 w-full rounded-lg border border-line bg-white px-3 text-sm tabular-nums focus:border-brand focus:outline-2 focus:outline-blue-200; }
+  .card { @apply rounded-md border border-line bg-white p-5; }
+  .input { @apply h-10 w-full rounded-md border border-line bg-white px-3 text-sm tabular-nums focus:border-brand focus:outline-2 focus:outline-brand/20; }
   .tbl { @apply w-full border-collapse text-sm tabular-nums; }
-  .tbl th { @apply border-b border-line bg-slate-50 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-mute; }
-  .tbl td { @apply border-b border-slate-100 px-3 py-2 whitespace-nowrap; }
+  .tbl th { @apply border-b border-line bg-stone-50 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-mute; }
+  .tbl td { @apply border-b border-stone-100 px-3 py-2 whitespace-nowrap; }
   .tbl td:not(:first-child), .tbl th:not(:first-child) { @apply text-right; }
 }
 
@@ -47,7 +49,7 @@ body { background: var(--color-paper); color: var(--color-ink); }
 .type-dots i:nth-child(2) { animation-delay: .2s; } .type-dots i:nth-child(3) { animation-delay: .4s; }
 @keyframes dot { 40% { opacity: 1; } }
 .scan-line { position: relative; overflow: hidden; }
-.scan-line::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(59,130,246,.12), transparent); transform: translateX(-100%); animation: scan 2.4s ease-in-out infinite; pointer-events: none; }
+.scan-line::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(31,77,58,.10), transparent); transform: translateX(-100%); animation: scan 2.4s ease-in-out infinite; pointer-events: none; }
 @keyframes scan { to { transform: translateX(100%); } }
 @media (prefers-reduced-motion: reduce) { .type-cursor, .robot-bob, .type-dots i, .scan-line::after { animation: none; } .type-cursor-done { opacity: 0; } }
 @media print { .type-cursor { display: none; } }

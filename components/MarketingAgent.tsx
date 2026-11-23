@@ -58,18 +58,18 @@ export default function MarketingAgent({ t, idx, apply }: { t: Team; idx: number
             return (
               <button key={c.id} type="button" aria-pressed={on} disabled={busy} title={c.note}
                 onClick={() => setPicked(on ? picked.filter((x) => x !== c.id) : [...picked, c.id])}
-                className={`rounded-full border px-3 py-1.5 text-sm transition ${on ? "border-brand bg-brand text-white" : "border-line hover:bg-slate-50"}`}>{c.name}</button>
+                className={`rounded-full border px-3 py-1.5 text-sm transition ${on ? "border-brand bg-brand text-white" : "border-line hover:bg-stone-50"}`}>{c.name}</button>
             );
           })}
         </div>
       </fieldset>
 
       <div className="mt-4" aria-live="polite">
-        {busy && <div className="scan-line rounded-xl bg-slate-50 px-4 py-3"><RobotWriting label="Marketing agent is writing your plan" /></div>}
+        {busy && <div className="scan-line rounded-xl bg-stone-50 px-4 py-3"><RobotWriting label="Marketing agent is writing your plan" /></div>}
         {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
         {result && (
           <div className="grid gap-3">
-            <p className="rounded-xl bg-blue-50 px-4 py-3 text-sm text-brand-dark"><Typewriter text={result.reasoning} speed={18} /></p>
+            <p className="rounded-xl bg-[#eaf0ec] px-4 py-3 text-sm text-brand-dark"><Typewriter text={result.reasoning} speed={18} /></p>
             <div className="overflow-x-auto">
               <table className="tbl">
                 <thead><tr><th>Channel</th><th>P1</th><th>P2</th><th>P3</th><th>Ad line</th></tr></thead>

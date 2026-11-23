@@ -9,15 +9,12 @@ const PATHS = [
   "M4.5 12a7.5 7.5 0 0 0 15 0m-15 0a7.5 7.5 0 1 1 15 0m-15 0H3m16.5 0H21m-1.5 0H12m-8.457 3.077 1.41-.513m14.095-5.13 1.41-.513M5.106 17.785l1.15-.964m11.49-9.642 1.149-.964M7.501 19.795l.75-1.3m7.5-12.99.75-1.3m-6.063 16.658.26-1.477m2.605-14.772.26-1.477m0 17.726-.26-1.477M10.698 4.614l-.26-1.477M16.5 19.794l-.75-1.299M7.5 4.205 12 12m6.894 5.785-1.149-.964M6.256 7.178l-1.15-.964m15.352 8.864-1.41-.513M4.954 9.435l-1.41-.514M12.002 12l-3.75 6.495",
   "M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z",
 ];
-export const ROLE_TONE = [
-  "bg-emerald-100 text-emerald-700", "bg-violet-100 text-violet-700", "bg-sky-100 text-sky-700", "bg-orange-100 text-orange-700",
-  "bg-amber-100 text-amber-700", "bg-rose-100 text-rose-700", "bg-slate-200 text-slate-700", "bg-teal-100 text-teal-700",
-];
-export const ROLE_BAR = ["bg-emerald-500", "bg-violet-500", "bg-sky-500", "bg-orange-500", "bg-amber-500", "bg-rose-500", "bg-slate-500", "bg-teal-500"];
+export const ROLE_TONE = Array(8).fill("bg-[#eaf0ec] text-brand");
+export const ROLE_BAR = Array(8).fill("bg-brand");
 
 export default function RoleIcon({ i, size = "size-11" }: { i: number; size?: string }) {
   return (
-    <span className={`grid ${size} shrink-0 place-items-center rounded-xl ${ROLE_TONE[i]}`}>
+    <span className={`grid ${size} shrink-0 place-items-center rounded-md ${ROLE_TONE[i]}`}>
       <svg aria-hidden="true" className="size-1/2" fill="none" viewBox="0 0 24 24" strokeWidth={1.6} stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" d={PATHS[i]} />
       </svg>

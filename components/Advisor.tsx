@@ -65,9 +65,9 @@ function AdvisorChat({ getContext, starters, scope }: { getContext: () => unknow
       <p className="text-xs text-mute">{scope} Answers are written by AI from the numbers, so check before acting.</p>
       <div className="mt-3 grid min-h-0 flex-1 content-start gap-3 overflow-y-auto" aria-live="polite">
         {msgs.map((m, i) => (
-          <div key={i} className={`max-w-[88%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-6 ${m.role === "user" ? "ml-auto bg-brand text-white" : "bg-slate-100 text-ink"}`}>{m.role === "assistant" ? (i === msgs.length - 1 ? <Typewriter text={clean(m.text)} speed={8} /> : clean(m.text)) : m.text}</div>
+          <div key={i} className={`max-w-[88%] whitespace-pre-wrap rounded-lg px-4 py-3 text-sm leading-6 ${m.role === "user" ? "ml-auto bg-brand text-white" : "bg-stone-100 text-ink"}`}>{m.role === "assistant" ? (i === msgs.length - 1 ? <Typewriter text={clean(m.text)} speed={8} /> : clean(m.text)) : m.text}</div>
         ))}
-        {busy && <div className="w-fit rounded-2xl bg-slate-100 px-4 py-3"><RobotWriting label="Advisor is writing" /></div>}
+        {busy && <div className="w-fit rounded-lg bg-stone-100 px-4 py-3"><RobotWriting label="Advisor is writing" /></div>}
         {!msgs.length && (
           <div className="flex flex-col gap-2">
             {starters.map((s) => <button key={s} className="btn justify-start text-left text-xs" disabled={busy} onClick={() => ask(s)}>{s}</button>)}
@@ -103,7 +103,7 @@ export default function Advisor() {
   return (
     <div className="no-print">
       {open && (
-        <div role="dialog" aria-label="Advisor" className="fixed inset-x-3 bottom-20 z-50 flex h-[min(34rem,calc(100dvh-7rem))] flex-col rounded-2xl border border-line bg-white p-4 shadow-2xl sm:inset-x-auto sm:right-5 sm:w-[24rem]">
+        <div role="dialog" aria-label="Advisor" className="fixed inset-x-3 bottom-20 z-50 flex h-[min(34rem,calc(100dvh-7rem))] flex-col rounded-lg border border-line bg-white p-4 shadow-lg sm:inset-x-auto sm:right-5 sm:w-[24rem]">
           <div className="mb-2 flex items-center justify-between">
             <div>
               <p className="font-semibold">Advisor</p>
@@ -117,7 +117,7 @@ export default function Advisor() {
         </div>
       )}
       <button onClick={() => setOpen(!open)} aria-expanded={open} aria-label={open ? "Close advisor" : "Ask Advisor"}
-        className="fixed bottom-4 right-4 z-50 flex min-h-12 min-w-12 items-center justify-center gap-2 rounded-full bg-brand px-2.5 sm:bottom-5 sm:right-5 sm:px-5 font-semibold text-white shadow-xl transition hover:bg-blue-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
+        className="fixed bottom-4 right-4 z-50 flex min-h-12 min-w-12 items-center justify-center gap-2 rounded-md bg-brand px-2.5 sm:bottom-5 sm:right-5 sm:px-5 font-semibold text-white shadow-lg transition hover:bg-brand-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
         <span className="grid size-7 place-items-center rounded-full bg-white/20 text-xs font-bold" aria-hidden="true">AI</span>
         <span className="hidden sm:inline">{open ? "Close" : "Ask Advisor"}</span>
       </button>

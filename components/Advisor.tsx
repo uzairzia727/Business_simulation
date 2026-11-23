@@ -3,7 +3,7 @@ import Typewriter, { RobotWriting } from "./Typewriter";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { ROLES, Team } from "@/lib/sim";
-import { loadTeams } from "@/lib/store";
+import { economyBrief, loadTeams } from "@/lib/store";
 
 // Strip leftover Markdown symbols the model sometimes adds.
 const clean = (t: string) => t.replace(/\*+/g, "").replace(/^#+ /gm, "");
@@ -24,6 +24,7 @@ function context(t: Team, idx: number, teams: Team[]) {
       aiAgentsOn: r.agentsOn, aiAgentCost: r.agentCost,
     },
     history: t.history ?? [],
+    economy: economyBrief(),
     rivals: teams.map((x, i) => x.report && i !== idx ? { company: `Team ${i + 1}`, strategy: ROLES[i].name, revenue: round(x.report.revenue), netProfit: round(x.report.net), unitsSold: x.report.soldU.reduce((a, b) => a + b, 0) } : null).filter(Boolean),
   };
 }
@@ -31,6 +32,7 @@ function context(t: Team, idx: number, teams: Team[]) {
 function leagueContext(teams: Team[]) {
   return {
     view: "League overview of all 8 companies",
+    economy: economyBrief(),
     companies: teams.map((x, i) => x.report ? {
       company: `Team ${i + 1}`, strategy: ROLES[i].name, quarter: `Y${x.year} Q${x.quarter}`,
       revenue: Math.round(x.report.revenue), netProfit: Math.round(x.report.net),

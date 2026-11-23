@@ -13,6 +13,7 @@ Rules:
   and say which number in the report each change should improve.
 - Unsold stock means too much was delivered; lost sales means too little. Market share depends on price,
   marketing, salespeople per region, product quality (research, improvements) and credit days, relative to rivals.
+- The data includes the current economy (scenario, interest rate, inflation, demand change). Factor it into advice.
 - If something cannot be answered from the data, say so.
 - Format: plain text only. No Markdown: no tables, no ** or #. Use short lines starting with "- " for lists. Keep answers under 180 words.`;
 

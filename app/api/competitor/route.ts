@@ -14,21 +14,22 @@ for the same customers (3 products, 4 regions, currency Rs). You decide next qua
 Goal: maximise total profit over the coming quarters while staying true to your company's strategist role.
 How the market works: customers split between companies by relative price (strongest effect), marketing spend
 (builds brand over time), salespeople per region, product quality (research builds it over time; major improvements
-are permanent) and credit days. You sell the smaller of units delivered and customer demand: unsold units become stock,
+are permanent) and credit days. The economy (boom, recession, inflation, rate shock) changes total demand, price sensitivity,
+material and wage costs, and the overdraft interest rate: adapt to it. You sell the smaller of units delivered and customer demand: unsold units become stock,
 shortfalls are lost sales. Overtime is expensive; negative cash costs interest.
 Decision ids:
 ${FIELD_GUIDE}
 Respond with JSON only: {"reasoning": "<max 50 words, plain English>", "decisions": {"<id>": <number>, ...}}
 Change between 3 and 15 decisions; omit ids you keep the same. Use realistic steps (prices usually within ±10% per quarter).`;
 
-type Body = { company: string; role: string; focus: string; decisions: Record<string, string>; results: unknown; market: unknown };
+type Body = { company: string; role: string; focus: string; decisions: Record<string, string>; results: unknown; market: unknown; economy?: unknown };
 
 export async function POST(req: Request) {
   const key = process.env.GROQ_API_KEY;
   if (!key) return Response.json({ error: "AI competitors need GROQ_API_KEY in the environment." }, { status: 503 });
 
   const b = (await req.json()) as Body;
-  const user = JSON.stringify({ you: `${b.company}, role: ${b.role} — ${b.focus}`, currentDecisions: b.decisions, lastResults: b.results, market: b.market });
+  const user = JSON.stringify({ you: `${b.company}, role: ${b.role} — ${b.focus}`, currentDecisions: b.decisions, lastResults: b.results, market: b.market, economy: b.economy });
 
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",

@@ -116,7 +116,7 @@ export function roleData(i: number): Values {
 }
 
 export type Meta = { year: string; quarter: string; simCode: string; groupNo: string };
-export type QuarterSummary = { label: string; revenue: number; net: number; cash: number; share: number };
+export type QuarterSummary = { label: string; revenue: number; net: number; cash: number; share: number; scenario?: string };
 export type Team = Meta & { d: Values; report: Report | null; touched?: boolean; agents?: Agents; aiRun?: boolean; aiNote?: string; ai?: ReturnType<typeof agentImpact>; pos?: Position; history?: QuarterSummary[] };
 
 export const isBlank = (v: unknown) => v === null || v === undefined || String(v).trim() === "";
@@ -149,11 +149,24 @@ export type Agents = Partial<Record<AgentId, boolean>>;
 export const AGENT_COST = 12000; // per agent per quarter
 const on = (ag: Agents | undefined, id: AgentId) => !!ag?.[id];
 
+// ---------- Economy: one scenario applies to the whole market each quarter ----------
+export type Econ = { scenario: ScenarioId; gdp: number };
+export const SCENARIOS = {
+  normal: { name: "Stable economy", desc: "Steady growth, normal prices and interest.", demand: 1, elasticity: 2.5, materials: 1, wages: 1, rate: 0.05, growth: 0.005, inflation: 0.02, unemployment: 0.05 },
+  boom: { name: "Boom", desc: "Customers spend more; all markets grow. Rates edge up.", demand: 1.15, elasticity: 2.2, materials: 1.03, wages: 1.02, rate: 0.06, growth: 0.015, inflation: 0.035, unemployment: 0.04 },
+  recession: { name: "Recession", desc: "Demand falls and customers become more price-sensitive.", demand: 0.85, elasticity: 3.0, materials: 0.98, wages: 1, rate: 0.04, growth: -0.012, inflation: 0.01, unemployment: 0.08 },
+  inflation: { name: "High inflation", desc: "Materials and wages cost more; demand softens slightly.", demand: 0.97, elasticity: 2.5, materials: 1.12, wages: 1.06, rate: 0.08, growth: 0.002, inflation: 0.11, unemployment: 0.055 },
+  rateShock: { name: "Interest rate shock", desc: "The central bank raises rates sharply; borrowing is expensive and demand cools.", demand: 0.93, elasticity: 2.6, materials: 1, wages: 1, rate: 0.14, growth: -0.004, inflation: 0.03, unemployment: 0.06 },
+} as const;
+export type ScenarioId = keyof typeof SCENARIOS;
+export const DEFAULT_ECON: Econ = { scenario: "normal", gdp: 734 };
+const sc = (e?: Econ) => SCENARIOS[e?.scenario ?? "normal"] ?? SCENARIOS.normal;
+
 // ---------- Position: what a company carries from one quarter into the next ----------
 export type Position = {
   cash: number; debtors: number; creditors: number;
   machines: number; vans: number; workers: number; materialStock: number;
-  fg: number[]; fgValue: number; machineNBV: number; vehicleNBV: number; reserves: number;
+  fg: number[]; fgValue: number; matValue?: number; machineNBV: number; vehicleNBV: number; reserves: number;
   quality: number[]; goodwill: number[]; improved: number[];
 };
 export function initialPosition(): Position {
@@ -184,7 +197,7 @@ export function brand(d: Num, pos: Position, p: number) {
   };
 }
 
-function attractiveness(d: Num, pos: Position, g: number, p: number, ag?: Agents) {
+function attractiveness(d: Num, pos: Position, g: number, p: number, ag?: Agents, elasticity = 2.5) {
   const priceKey = `p${p + 1}${g === 0 ? "export" : "home"}`;
   const b = brand(d, pos, p);
   const price = Math.max(1, d[priceKey]) / BENCH[priceKey];
@@ -193,7 +206,7 @@ function attractiveness(d: Num, pos: Position, g: number, p: number, ag?: Agents
   const quality = (1 + 0.12 * b.improved) * Math.max(0.2, b.quality) ** 0.25;
   const credit = (Math.max(10, d.credit) / BENCH.credit) ** 0.1;
   const ai = (on(ag, "mi") ? 1.05 : 1) * (on(ag, "cs") ? 1.06 : 1);
-  return { a: price ** -2.5 * marketing ** 0.35 * coverage ** 0.3 * quality * credit * ai, price, marketing };
+  return { a: price ** -elasticity * marketing ** 0.35 * coverage ** 0.3 * quality * credit * ai, price, marketing };
 }
 
 // Units a company can sell in each region: this quarter's deliveries plus stock carried in (spread like deliveries).
@@ -205,7 +218,8 @@ function available(d: Num, pos: Position): Grid {
   }));
 }
 
-export function market(all: { d: Values; pos?: Position; agents?: Agents }[]) {
+export function market(all: { d: Values; pos?: Position; agents?: Agents }[], econ?: Econ) {
+  const e = sc(econ);
   const ds = all.map((t) => toNum(t.d));
   const ps = all.map((t) => t.pos ?? initialPosition());
   const k = ds.length;
@@ -213,12 +227,12 @@ export function market(all: { d: Values; pos?: Position; agents?: Agents }[]) {
   const sold: Grid[] = ds.map(() => REGION_ROWS.map(() => [0, 0, 0]));
   const avail = ds.map((d, i) => available(d, ps[i]));
   REGION_ROWS.forEach((_, g) => [0, 1, 2].forEach((p) => {
-    const at = ds.map((d, i) => attractiveness(d, ps[i], g, p, all[i].agents));
+    const at = ds.map((d, i) => attractiveness(d, ps[i], g, p, all[i].agents, e.elasticity));
     const sumA = at.reduce((s, x) => s + x.a, 0) || 1;
     const avgPrice = at.reduce((s, x) => s + x.price, 0) / k;
     const avgMkt = at.reduce((s, x) => s + x.marketing, 0) / k;
     // Total market grows when the industry is cheaper or markets harder.
-    const size = BASE_QTY[g][p] * k * avgPrice ** -1.2 * avgMkt ** 0.15;
+    const size = BASE_QTY[g][p] * k * e.demand * avgPrice ** -1.2 * avgMkt ** 0.15;
     ds.forEach((_, i) => {
       const dem = Math.round((size * at[i].a) / sumA);
       demand[i][g][p] = dem;
@@ -244,19 +258,19 @@ export function market(all: { d: Values; pos?: Position; agents?: Agents }[]) {
 }
 
 type Run = { d: Values; quarter: string; pos?: Position; agents?: Agents };
-export function calculateAll(all: Run[]) {
-  const m = market(all);
-  return all.map((t, i) => calculate(m.adjusted[i], t.quarter, m.sold[i], m.demand[i], t.pos, t.agents));
+export function calculateAll(all: Run[], econ?: Econ) {
+  const m = market(all, econ);
+  return all.map((t, i) => calculate(m.adjusted[i], t.quarter, m.sold[i], m.demand[i], t.pos, t.agents, econ));
 }
 
 // With-vs-without comparison: rerun the market with one company's agents changed, rivals unchanged.
-export function agentImpact(all: Run[], i: number) {
-  const net = (ag: Agents) => calculateAll(all.map((t, k) => (k === i ? { ...t, agents: ag } : t)))[i];
+export function agentImpact(all: Run[], i: number, econ?: Econ) {
+  const net = (ag: Agents) => calculateAll(all.map((t, k) => (k === i ? { ...t, agents: ag } : t)), econ)[i];
   const ag = all[i].agents ?? {};
   const active = AGENTS.filter((a) => ag[a.id]);
   if (!active.length) return null;
   const off = net({});
-  const base = calculateAll(all)[i];
+  const base = calculateAll(all, econ)[i];
   return {
     off: { net: off.net, revenue: off.revenue, sold: off.soldU.reduce((a, b) => a + b, 0), lost: off.lostSales.reduce((a, b) => a + b, 0), unsold: off.unsold.reduce((a, b) => a + b, 0), cash: off.cashShown - off.overdraft },
     each: active.map((a) => ({ id: a.id, name: a.name, value: base.net - net({ ...ag, [a.id]: false }).net })),
@@ -265,8 +279,9 @@ export function agentImpact(all: Run[], i: number) {
 
 export type Report = ReturnType<typeof calculate>;
 
-export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Grid, demandIn?: Grid, posIn?: Position, ag?: Agents) {
+export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Grid, demandIn?: Grid, posIn?: Position, ag?: Agents, econ?: Econ) {
   const pos = posIn ?? initialPosition();
+  const e = sc(econ);
   const d = toNum(raw);
   const u = [1, 2, 3].map((p) => d[`p${p}exportQty`] + d[`p${p}southQty`] + d[`p${p}westQty`] + d[`p${p}northQty`]);
   const avail = available(d, pos);
@@ -280,18 +295,22 @@ export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Gr
     s + sold[0][p] * d[`p${p + 1}export`] + (sold[1][p] + sold[2][p] + sold[3][p]) * d[`p${p + 1}home`], 0) * (on(ag, "pr") ? 1.02 : 1);
   const agentsOn = AGENTS.filter((a) => on(ag, a.id)).length;
   const agentCost = agentsOn * AGENT_COST;
-  const matPrice = d.rawPrice * (on(ag, "sp") ? 0.96 : 1);
+  const matPrice = d.rawPrice * e.materials * (on(ag, "sp") ? 0.96 : 1);
+  const wage = d.wage * e.wages;
   const matUsed = u[0] * OPEN.bom[0] + u[1] * OPEN.bom[1] + u[2] * OPEN.bom[2];
   const materialsPurchased = d.rawUnits * matPrice;
   const materialStock = Math.max(0, pos.materialStock + d.rawUnits - matUsed);
-  const materialsConsumedCost = matUsed * matPrice;
+  // Periodic stock method: consumption = opening stock value + purchases − closing stock value (keeps the books balanced when prices change).
+  const openMatValue = pos.matValue ?? pos.materialStock * d.rawPrice;
+  const matValue = materialStock * matPrice;
+  const materialsConsumedCost = openMatValue + materialsPurchased - matValue;
   const hoursReq = (u[0] * d.p1time + u[1] * d.p2time + u[2] * d.p3time) / 60;
   const salesForce = d.exportSales + d.southSales + d.westSales + d.northSales;
   const workers = Math.max(0, pos.workers + d.recruitWorkers - d.dismissWorkers);
   const shiftFactor = d.shift <= 1 ? 1 : d.shift === 2 ? 1.15 : 1.33;
   const hoursCap = workers * 13 * 37.5 * shiftFactor * (1 + 0.04 * Math.min(d.trainWorkers, workers));
   const otHours = Math.max(0, hoursReq - hoursCap) * (on(ag, "ps") ? 0.5 : 1);
-  const wages = Math.min(hoursReq, hoursCap) * d.wage + otHours * d.wage * 1.5;
+  const wages = Math.min(hoursReq, hoursCap) * wage + otHours * wage * 1.5;
   const advert = (d.p1advert + d.p2advert + d.p3advert) * 1000;
   const trade = (d.p1trade + d.p2trade + d.p3trade) * 1000;
   const merch = (d.p1merch + d.p2merch + d.p3merch) * 1000;
@@ -299,7 +318,7 @@ export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Gr
   const salesSalary = d.salary * 100 * salesForce;
   const commission = revenue * (d.commission / 100);
   const mgmt = d.budget * 1000;
-  const maint = d.maintenance * d.wage * 1.25;
+  const maint = d.maintenance * wage * 1.25;
   const machines = Math.max(0, pos.machines + d.machinesOrder - d.machinesSell);
   const vans = Math.max(0, pos.vans + d.vansBuy - d.vansSell);
   const depMachines = pos.machineNBV * 0.031;
@@ -323,7 +342,7 @@ export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Gr
   // Last quarter's debtors are collected and last quarter's creditors are paid this quarter.
   let cash = pos.cash + (revenue - debtors + pos.debtors) - (materialsPurchased - creditors + pos.creditors)
     - wages - sellingOH - adminOH - factory - capex + assetSales;
-  const interest = (cash < 0 ? (Math.abs(cash) * OPEN.interestAnnual) / 4 : 0) * (on(ag, "fc") ? 0.7 : 1);
+  const interest = (cash < 0 ? (Math.abs(cash) * e.rate) / 4 : 0) * (on(ag, "fc") ? 0.7 : 1);
   cash -= interest;
   const pbt = operating - interest;
   const tax = pbt > 0 ? pbt * OPEN.taxRate : 0;
@@ -334,16 +353,14 @@ export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Gr
   const cashShown = Math.max(0, cash);
   const machineNBV = pos.machineNBV + d.machinesOrder * 80000 - d.machinesSell * (pos.machineNBV / Math.max(1, pos.machines)) - depMachines;
   const vehicleNBV = pos.vehicleNBV + d.vansBuy * 12000 - d.vansSell * (pos.vehicleNBV / Math.max(1, pos.vans)) - depVans;
-  const matValue = materialStock * d.rawPrice;
   const reserves = pos.reserves + net - dividend;
   const netAssets = OPEN.property + machineNBV + vehicleNBV + matValue + fgValue + debtors + cashShown - creditors - overdraft;
   const mNeed = u[0] * OPEN.mhrs[0] + u[1] * OPEN.mhrs[1] + u[2] * OPEN.mhrs[2];
   const brands = [0, 1, 2].map((p) => brand(d, pos, p));
   const close: Position = {
-    cash, debtors, creditors, machines, vans, workers, materialStock, fg: unsold, fgValue, machineNBV, vehicleNBV, reserves,
+    cash, debtors, creditors, machines, vans, workers, materialStock, fg: unsold, fgValue, matValue, machineNBV, vehicleNBV, reserves,
     quality: brands.map((b) => b.quality), goodwill: brands.map((b) => b.goodwill), improved: brands.map((b) => b.improved),
   };
-  const q = n(quarter) || 1;
   return {
     agentsOn, agentCost, u, soldU, demandU, unsold, lostSales, fgValue, productionCost, sold, demand, revenue,
     materialsConsumedCost, materialsPurchased, wages, otHours, hoursReq, hoursCap,
@@ -351,7 +368,7 @@ export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Gr
     factory, depVans, transport, costOfSales, gross, operating, interest, tax, net, dividend,
     machines, vans, workers, salesForce, materialStock, debtors, creditors, cashShown, overdraft,
     machineNBV, vehicleNBV, matValue, reserves, netAssets, capex, assetSales, mNeed, mAvail: machines * OPEN.machineHour,
-    gdp: 734 + (q - 1) * 4, nextMat: Math.round(d.rawPrice * 1000 * 1.004), d, open: pos, close,
+    gdp: econ?.gdp ?? DEFAULT_ECON.gdp, econ: { ...e, id: econ?.scenario ?? "normal" }, nextMat: Math.round(matPrice * 1000 * (1 + e.inflation / 4)), d, open: pos, close,
   };
 }
 

@@ -1,8 +1,9 @@
 "use client";
 import Typewriter from "./Typewriter";
+import Economy from "./Economy";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { OPEN, REGION_ROWS, ROLES, Report, Team, fmt, gbp } from "@/lib/sim";
+import { DEFAULT_ECON, OPEN, REGION_ROWS, ROLES, Report, Team, fmt, gbp } from "@/lib/sim";
 import { useTeams } from "@/lib/store";
 import RoleIcon, { ROLE_BAR } from "./RoleIcon";
 import Competitors from "./Competitors";
@@ -24,7 +25,7 @@ const Block = ({ title, children }: { title: string; children: React.ReactNode }
 
 export default function Reports() {
   const router = useRouter();
-  const { teams, ready, save, generateAll, closeQuarter, runCompetitors } = useTeams();
+  const { teams, ready, save, generateAll, closeQuarter, runCompetitors, econ, setEcon } = useTeams();
 
   // Any company without a report is auto-filled from its role and calculated.
   useEffect(() => { if (ready && teams.some((t) => !t.report)) generateAll(teams); }, [ready, teams, generateAll]);
@@ -50,10 +51,11 @@ export default function Reports() {
           <button className="btn btn-accent" onClick={() => { if (confirm(`Close ${now} for all 8 companies? Results are locked in and the next quarter starts from each company's closing position.`)) closeQuarter(teams); }}>Close quarter &amp; start next</button>
           <button className="btn" onClick={() => generateAll(teams.map((x) => ({ ...x, report: null })))}>Recalculate</button>
           <button className="btn btn-primary" onClick={() => window.print()}>Save as PDF</button>
-          <button className="btn btn-danger" onClick={() => { if (confirm("Restart the whole simulation from Quarter 1? All quarters and edits will be lost.")) generateAll(teams.map(() => ({ year: "", quarter: "", simCode: "", groupNo: "", d: {}, report: null }))); }}>Reset all</button>
+          <button className="btn btn-danger" onClick={() => { if (confirm("Restart the whole simulation from Quarter 1? All quarters and edits will be lost.")) { setEcon(DEFAULT_ECON, false); generateAll(teams.map(() => ({ year: "", quarter: "", simCode: "", groupNo: "", d: {}, report: null })), DEFAULT_ECON); } }}>Reset all</button>
         </div>
       </div>
 
+      <Economy teams={teams} econ={econ} setEcon={setEcon} />
       <Competitors teams={teams} save={save} run={runCompetitors} />
 
       <section className="card mt-6 team-hide" id="league">
@@ -64,7 +66,7 @@ export default function Reports() {
             <tbody>
               {league.map(({ i, r: x, total: tot }, k) => (
                 <tr key={i} onClick={() => pick(i)} className={`cursor-pointer hover:bg-stone-50`}>
-                  <td><span className={`inline-grid size-7 place-items-center rounded-full text-xs font-bold ${k === 0 ? "bg-accent text-ink" : "bg-stone-100"}`}>{k + 1}</span></td>
+                  <td><span className={`inline-grid size-7 place-items-center rounded-full text-xs font-bold ${k === 0 ? "bg-brand text-white" : "bg-stone-100"}`}>{k + 1}</span></td>
                   <td className="!text-left"><div className="flex items-center gap-3"><RoleIcon i={i} size="size-9" /><div><button className="text-left font-semibold text-brand hover:underline" onClick={() => pick(i)}>Team {i + 1}</button>
                     <span className="block text-xs text-mute">{ROLES[i].name}{teams[i].aiRun ? " · AI" : ""}</span></div></div></td>
                   <td>{gbp(x.revenue)}</td><td className={x.net < 0 ? "text-red-700" : ""}>{gbp(x.net)}</td>
@@ -182,8 +184,8 @@ export function TeamReport({ t, idx, controls }: { t: Team; idx: number; control
               <Table head={["Region", "P1", "P2", "P3"]} rows={REGION_ROWS.map((row) => [row[0], ...row.slice(1).map((k) => fmt(d[k]))])} />
             </Block>
             <Block title="Economic information">
-              <Table head={["Measure", "Value"]} rows={[["GDP index last quarter", fmt(r.gdp)], ["Unemployment rate", "5.0%"],
-                ["Central bank rate", "5.0%"], ["Material price next quarter (Rs/000)", fmt(r.nextMat)]]} />
+              <Table head={["Measure", "Value"]} rows={[["Economic scenario", r.econ?.name ?? "Stable economy"], ["GDP index", fmt(r.gdp)], ["Unemployment rate", `${((r.econ?.unemployment ?? 0.05) * 100).toFixed(1)}%`],
+                ["Central bank rate", `${((r.econ?.rate ?? 0.05) * 100).toFixed(1)}%`], ["Material price next quarter (Rs/000)", fmt(r.nextMat)]]} />
             </Block>
           </div>
         </div>

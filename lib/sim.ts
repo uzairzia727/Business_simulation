@@ -88,7 +88,7 @@ export function bounds(id: string): [number, number] {
 const OPEN = {
   machines: 10, vans: 17, workers: 85, materialStock: 8000,
   cash: 185000, property: 300000, machineNBV: 1594818, vehicleNBV: 175758,
-  shareCapital: 1000000, reserves: 865000, shares: 500000, taxRate: 0.19,
+  shareCapital: 1000000, reserves: 1655576, shares: 500000, taxRate: 0.19,
   interestAnnual: 0.05, factoryBase: 85000, machineHour: 500,
   bom: [1, 1.65, 3.3], mhrs: [0.35, 0.62, 1.25],
 };

@@ -44,7 +44,7 @@ export default function Reports() {
   const league = teams.map((t, i) => ({ i, r: t.report!, total: total(t) })).sort((a, b) => b.total - a.total);
   const done = teams[0].history?.length ?? 0;
   const now = `Year ${teams[0].year} · Quarter ${teams[0].quarter}`;
-  const pick = (i: number) => router.push(`/team/${i + 1}#team-report`);
+  const pick = (i: number) => router.push(`/team/${i + 1}/report`);
 
   return (
     <div className="wrap py-10">

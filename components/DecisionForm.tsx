@@ -7,42 +7,32 @@ import { Announcement } from "./Instructor";
 import { PolicyNotice } from "./Regulator";
 import RoleIcon from "./RoleIcon";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { AGENTS, AGENT_COST, ALL_IDS, FIELDS, Group, REGION_ROWS, ROLES, Team, autofill, emptyTeam, gbp, isBlank, roleData } from "@/lib/sim";
 import { useTeams } from "@/lib/store";
 import { SavePdf, TeamReport } from "./Reports";
+import { SECTIONS, SectionId, sectionName as secName } from "@/lib/sections";
 
+// Main decisions per department; everything else sits under "More decisions".
+const MAIN = new Set(["p1home", "p2home", "p3home", "p1export", "p2export", "p3export", "p1advert", "p2advert", "p3advert",
+  "exportSales", "southSales", "westSales", "northSales", "research1", "research2", "research3",
+  "wage", "recruitWorkers", "dismissWorkers", "trainWorkers", "credit", "dividend", "budget"]);
 const META: [keyof Team, string][] = [["year", "Year"], ["quarter", "Quarter (1–4)"], ["simCode", "Simulation code"], ["groupNo", "Group number"]];
 
-// Company portal sections. Each decision group lives in one section, so a team works one department at a time.
-const SECTIONS = [
-  { id: "dashboard", name: "Dashboard", icon: "M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z" },
-  { id: "sales", name: "Sales & marketing", groups: ["marketing"], icon: "M3 11l18-8v18L3 13v-2Zm4 3v5h3v-4" },
-  { id: "operations", name: "Operations", groups: ["operations"], icon: "M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6" },
-  { id: "people", name: "People", groups: ["personnel"], icon: "M16 11a4 4 0 1 0-8 0M4 21a8 8 0 0 1 16 0" },
-  { id: "finance", name: "Finance", groups: ["finance", "management"], icon: "M12 3v18M17 7H9.5a3 3 0 0 0 0 6h5a3 3 0 0 1 0 6H6" },
-  { id: "strategy", name: "Strategy & AI", icon: "M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 15.6 7.1 18.2l.9-5.5-4-3.9 5.5-.8L12 3Z" },
-  { id: "report", name: "Quarterly report", icon: "M7 3h7l5 5v13H7V3Zm7 0v5h5M10 13h6M10 17h6" },
-] as const;
-type SectionId = (typeof SECTIONS)[number]["id"];
 
-export default function DecisionForm({ idx }: { idx: number }) {
+
+export default function DecisionForm({ idx, section: sec }: { idx: number; section: SectionId }) {
+  const router = useRouter();
   const { teams, ready, save, generateAll, econ } = useTeams();
   const [msg, setMsg] = useState("");
   const [showErr, setShowErr] = useState(false);
-  const [sec, setSec] = useState<SectionId>("dashboard");
   const role = ROLES[idx];
   const { t: w, ind, company } = useIndustry();
   // A team that has never been touched starts pre-filled from its strategist role.
   const t = ready && !teams[idx].touched ? autofill(teams[idx], idx) : teams[idx];
 
-  // Deep links: /team/3#finance opens that section; the old #team-report link opens the report.
-  useEffect(() => {
-    const h = location.hash.slice(1);
-    if (h === "team-report") setSec("report");
-    else if (SECTIONS.some((s) => s.id === h)) setSec(h as SectionId);
-  }, []);
-  const go = (id: SectionId) => { setSec(id); history.replaceState(null, "", `#${id}`); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const go = (id: SectionId) => router.push(`/team/${idx + 1}${id === "dashboard" ? "" : `/${id}`}`);
 
   const update = (patch: Partial<Team>) => {
     // While the instructor has locked decisions, nothing on this page can change them.
@@ -70,31 +60,51 @@ export default function DecisionForm({ idx }: { idx: number }) {
   const name = company(idx);
   const fieldsOf = (g: Group) => FIELDS.filter((f) => f[2] === g);
   // A plain function, not a component: a component defined here would remount inputs on every keystroke and lose focus.
-  const fields = (g: Group, title: string) => (
-    <section className="card">
-      <h2 className="font-semibold">{title}</h2>
-      <div className="mt-4 grid gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
-        {fieldsOf(g).map(([id, label]) => (
-          <label key={id} className="text-sm text-slate-700">{w(label)}
-            <input type="number" step="any" inputMode="decimal" className={`input mt-1 ${bad(id) ? "border-red-500 bg-red-50" : ""}`}
-              value={t.d[id] ?? ""} onChange={(e) => setD(id, e.target.value)} aria-invalid={bad(id) || undefined} />
-          </label>
-        ))}
-      </div>
-    </section>
+  const input = ([id, label]: (typeof FIELDS)[number]) => (
+    <label key={id} className="text-sm text-slate-700">{w(label)}
+      <input type="number" step="any" inputMode="decimal" className={`input mt-1 ${bad(id) ? "border-red-500 bg-red-50" : ""}`}
+        value={t.d[id] ?? ""} onChange={(e) => setD(id, e.target.value)} aria-invalid={bad(id) || undefined} />
+    </label>
   );
-  const sectionName = (id: SectionId) => id === "operations" && ind.name === "Real estate" ? "Projects & construction" : SECTIONS.find((s) => s.id === id)!.name;
+  // Main decisions are always shown; the rest of the department's decisions are folded under "More decisions".
+  const fields = (g: Group, title: string) => {
+    const all = fieldsOf(g), main = all.filter((f) => MAIN.has(f[0])), more = all.filter((f) => !MAIN.has(f[0]));
+    const show = main.length ? main : all;
+    return (
+      <section className="card">
+        <h2 className="font-semibold">{title}</h2>
+        <div className="mt-4 grid gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">{show.map(input)}</div>
+        {main.length > 0 && more.length > 0 && (
+          <details className="mt-4 border-t border-line pt-3">
+            <summary className="cursor-pointer text-sm font-semibold text-brand">More decisions ({more.length})</summary>
+            <div className="mt-3 grid gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">{more.map(input)}</div>
+          </details>
+        )}
+      </section>
+    );
+  };
+  // Optional tools stay closed until a team wants them.
+  const advanced = (title: string, hint: string, body: React.ReactNode) => (
+    <details className="card group">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+        <span><span className="block font-semibold">{title}</span><span className="block text-sm text-mute">{hint}</span></span>
+        <span className="text-sm font-semibold text-brand group-open:hidden">Open</span><span className="hidden text-sm font-semibold text-brand group-open:inline">Close</span>
+      </summary>
+      <div className="mt-4 [&>section]:mt-0 [&>section]:border-0 [&>section]:p-0">{body}</div>
+    </details>
+  );
+  const sectionName = (id: SectionId) => secName(id, ind.name);
 
   return (
     <div className="wrap py-8">
       {/* Company header */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-5">
         <div className="flex items-center gap-4">
-          <RoleIcon i={idx} size="size-14" />
+          <RoleIcon i={idx} size="size-11" />
           <div>
             <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand">Team {idx + 1} · {ind.name} · Year {t.year || "—"} Q{t.quarter || "—"}</p>
-            <h1 className="text-3xl text-ink">{name}</h1>
-            <p className="text-sm text-mute">Strategy: <span className="font-medium text-ink">{role.name}</span> — {role.focus}</p>
+            <h1 className="text-2xl text-ink sm:text-3xl">{name}</h1>
+            <p className="text-sm text-mute">Strategy: <span className="font-medium text-ink">{role.name}</span></p>
           </div>
         </div>
         <div className="no-print flex flex-wrap items-center gap-2">
@@ -104,30 +114,24 @@ export default function DecisionForm({ idx }: { idx: number }) {
       </div>
 
       <Announcement econ={econ} />
-      <PolicyNotice team={teams[idx]} econ={econ} />
-      {t.aiRun && (
+      {sec === "dashboard" && <PolicyNotice team={teams[idx]} econ={econ} />}
+      {sec === "dashboard" && t.aiRun && (
         <div className="mt-4 rounded-md border border-line bg-[#eaf0ec] p-4 text-sm">
           <p className="font-semibold">This company is run by an AI competitor.</p>
           <p className="mt-1 text-slate-700">{t.aiNote ? `Its latest reasoning: ${t.aiNote}` : "It makes its decisions from the Instructor page."} Switch it to Human there to take over.</p>
         </div>
       )}
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[13rem_1fr]">
-        {/* Sidebar (desktop) / scrolling tabs (mobile) */}
-        <nav aria-label="Company sections" className="no-print lg:sticky lg:top-20 lg:self-start">
-          <ul className="-mx-4 flex gap-1 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0">
-            {SECTIONS.map((s) => (
-              <li key={s.id} className="shrink-0">
-                <button type="button" onClick={() => go(s.id)} aria-current={sec === s.id ? "page" : undefined}
-                  className={`flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-medium transition ${sec === s.id ? "bg-brand text-white" : "text-ink hover:bg-stone-100"}`}>
-                  <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d={s.icon} /></svg>
-                  <span className="whitespace-nowrap">{sectionName(s.id)}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </nav>
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-2xl">{sectionName(sec)}</h2>
+        <label className="no-print text-sm lg:hidden"><span className="sr-only">Section</span>
+          <select className="input w-56" value={sec} onChange={(e) => go(e.target.value as SectionId)}>
+            {SECTIONS.map((x) => <option key={x.id} value={x.id}>{sectionName(x.id)}</option>)}
+          </select>
+        </label>
+      </div>
 
+      <div className="mt-4">
         <div className="min-w-0">
           <fieldset disabled={!!econ.locked} className="contents">
             {sec === "dashboard" && <Dashboard t={t} idx={idx} teams={teams} missing={missing.length} go={go} />}
@@ -135,7 +139,7 @@ export default function DecisionForm({ idx }: { idx: number }) {
             {sec === "sales" && (
               <div className="grid gap-6">
                 {fields("marketing", "Prices, marketing & product improvements")}
-                <MarketingAgent t={t} idx={idx} apply={(d, plan) => { if (update({ d: { ...t.d, ...d }, channels: plan })) setMsg("Channel plan applied"); }} />
+                {advanced("Plan by marketing channel (optional)", "Split the budget across Google, Facebook, property portals and more, or let the AI marketing agent plan it.", <MarketingAgent t={t} idx={idx} apply={(d, plan) => { if (update({ d: { ...t.d, ...d }, channels: plan })) setMsg("Channel plan applied"); }} />)}
               </div>
             )}
 
@@ -166,7 +170,7 @@ export default function DecisionForm({ idx }: { idx: number }) {
             {sec === "people" && (
               <div className="grid gap-6">
                 {fields("personnel", w("Workers, wages & training"))}
-                <HRPanel t={t} idx={idx} update={(patch) => { if (update(patch)) setMsg("HR updated"); }} />
+                {advanced("Hire managers (optional)", "Recruit managers with CVs, AI screening and interviews.", <HRPanel t={t} idx={idx} update={(patch) => { if (update(patch)) setMsg("HR updated"); }} />)}
               </div>
             )}
 
@@ -174,8 +178,8 @@ export default function DecisionForm({ idx }: { idx: number }) {
               <div className="grid gap-6">
                 {fields("finance", "Credit, dividends & fleet")}
                 {fields("management", "Management budget & information")}
-                <section className="card">
-                  <h2 className="font-semibold">Simulation details</h2>
+                <details className="card">
+                  <summary className="cursor-pointer font-semibold">Simulation details (year, quarter, codes)</summary>
                   <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     {META.map(([k, label]) => (
                       <label key={k} className="text-sm font-medium text-slate-700">{label}
@@ -183,7 +187,7 @@ export default function DecisionForm({ idx }: { idx: number }) {
                       </label>
                     ))}
                   </div>
-                </section>
+                </details>
                 <section className="card">
                   <h2 className="font-semibold">Start again</h2>
                   <p className="text-sm text-mute">Restore this company&apos;s strategy defaults, or clear every decision.</p>
@@ -198,12 +202,12 @@ export default function DecisionForm({ idx }: { idx: number }) {
             {sec === "strategy" && (
               <div className="grid gap-6">
                 <WhatIf teams={teams} idx={idx} t={t} econ={econ} apply={(d, label) => { if (update({ d, ...(/marketing/.test(label) ? { channels: null } : {}) })) setMsg(`Applied: ${label}`); }} />
-                <section className="card">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <h2 className="font-semibold">AI agents</h2>
-                      <p className="text-sm text-mute">Each agent costs Rs {AGENT_COST.toLocaleString("en-PK")} per quarter. The report shows what they earn back.</p>
-                    </div>
+                {advanced("AI agents (optional)", `Simulated helpers at Rs ${AGENT_COST.toLocaleString("en-PK")} each per quarter; the report shows what they earn back.`, <section>
+                  <div className="flex flex-wrap items-center justify-end gap-3">
+
+
+
+
                     <div className="flex gap-2">
                       <button className="btn" onClick={() => update({ agents: Object.fromEntries(AGENTS.map((a) => [a.id, true])) })}>All on</button>
                       <button className="btn" onClick={() => update({ agents: {} })}>All off</button>
@@ -220,7 +224,7 @@ export default function DecisionForm({ idx }: { idx: number }) {
                       );
                     })}
                   </div>
-                </section>
+                </section>)}
               </div>
             )}
           </fieldset>

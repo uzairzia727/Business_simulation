@@ -12,5 +12,5 @@ export async function generateMetadata({ params }: { params: Promise<{ n: string
 export default async function TeamPage({ params }: { params: Promise<{ n: string }> }) {
   const i = Number((await params).n) - 1;
   if (!(i >= 0 && i < TEAMS)) notFound();
-  return <DecisionForm idx={i} />;
+  return <DecisionForm idx={i} section="dashboard" />;
 }

@@ -1,4 +1,5 @@
 "use client";
+import Typewriter, { RobotWriting } from "./Typewriter";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { ROLES, Team } from "@/lib/sim";
@@ -64,9 +65,9 @@ function AdvisorChat({ getContext, starters, scope }: { getContext: () => unknow
       <p className="text-xs text-mute">{scope} Answers are written by AI from the numbers, so check before acting.</p>
       <div className="mt-3 grid min-h-0 flex-1 content-start gap-3 overflow-y-auto" aria-live="polite">
         {msgs.map((m, i) => (
-          <div key={i} className={`max-w-[88%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-6 ${m.role === "user" ? "ml-auto bg-brand text-white" : "bg-slate-100 text-ink"}`}>{m.role === "assistant" ? clean(m.text) : m.text}</div>
+          <div key={i} className={`max-w-[88%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-6 ${m.role === "user" ? "ml-auto bg-brand text-white" : "bg-slate-100 text-ink"}`}>{m.role === "assistant" ? (i === msgs.length - 1 ? <Typewriter text={clean(m.text)} speed={8} /> : clean(m.text)) : m.text}</div>
         ))}
-        {busy && <div className="w-fit rounded-2xl bg-slate-100 px-4 py-3 text-sm text-mute">Thinking…</div>}
+        {busy && <div className="w-fit rounded-2xl bg-slate-100 px-4 py-3"><RobotWriting label="Advisor is writing" /></div>}
         {!msgs.length && (
           <div className="flex flex-col gap-2">
             {starters.map((s) => <button key={s} className="btn justify-start text-left text-xs" disabled={busy} onClick={() => ask(s)}>{s}</button>)}

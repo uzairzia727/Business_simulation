@@ -1,3 +1,4 @@
+import Typewriter from "@/components/Typewriter";
 import Link from "next/link";
 import { ROLES } from "@/lib/sim";
 import RoleIcon from "@/components/RoleIcon";
@@ -27,7 +28,7 @@ export default function Home() {
           <div>
             <p className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-amber-300">Strategic management simulation</p>
             <h1 className="mt-5 text-4xl font-extrabold leading-[1.1] text-balance sm:text-6xl">
-              Compete on strategy. <span className="bg-gradient-to-r from-amber-300 to-orange-400 bg-clip-text text-transparent">Win on results.</span>
+              <Typewriter text="Compete on strategy." speed={55} className="inline-grid" /> <span className="bg-gradient-to-r from-amber-300 to-orange-400 bg-clip-text text-transparent">Win on results.</span>
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-8 text-blue-100">Lead one of eight competing companies, set quarterly strategy across marketing, operations, people and finance, and measure the impact through full management accounts.</p>
             <div className="mt-8 flex flex-wrap gap-3">

@@ -1,4 +1,5 @@
 "use client";
+import Typewriter, { RobotWriting } from "./Typewriter";
 import { useState } from "react";
 import { ROLES, Team } from "@/lib/sim";
 import RoleIcon from "./RoleIcon";
@@ -50,6 +51,7 @@ export default function Competitors({ teams, save, run }: {
         ))}
       </div>
 
+      {busy && <div className="scan-line mt-3 rounded-xl bg-slate-50 px-4 py-2"><RobotWriting label="AI competitors are writing their decisions" /></div>}
       <p role="status" aria-live="polite" className="mt-3 text-sm font-medium text-brand">{msg}</p>
       {errors.length > 0 && <ul role="alert" className="mt-2 list-disc pl-5 text-sm text-red-700">{errors.map((e) => <li key={e}>{e}</li>)}</ul>}
 
@@ -57,7 +59,7 @@ export default function Competitors({ teams, save, run }: {
         <div className="mt-4 grid gap-2">
           <h3 className="text-sm font-semibold">Latest AI reasoning</h3>
           {teams.map((t, i) => t.aiRun && t.aiNote ? (
-            <p key={i} className="rounded-xl bg-slate-50 px-4 py-3 text-sm"><span className="font-semibold">Team {i + 1}:</span> {t.aiNote}</p>
+            <p key={i} className="rounded-xl bg-slate-50 px-4 py-3 text-sm"><span className="font-semibold">Team {i + 1}:</span> <Typewriter text={t.aiNote} speed={14} className="inline-grid" /></p>
           ) : null)}
         </div>
       )}

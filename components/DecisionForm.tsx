@@ -1,4 +1,6 @@
 "use client";
+import Typewriter from "./Typewriter";
+import MarketingAgent from "./MarketingAgent";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -48,7 +50,7 @@ export default function DecisionForm({ idx }: { idx: number }) {
       <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wider text-brand">Team {idx + 1} · Company {idx + 1}</p>
-          <h1 className="text-3xl font-bold text-brand-dark">{role.name}</h1>
+          <h1 className="text-3xl font-bold text-brand-dark"><Typewriter text={role.name} speed={45} /></h1>
           <p className="mt-1 text-mute">{role.focus}</p>
         </div>
         <p role="status" aria-live="polite" className="text-sm font-medium text-emerald-700">{msg}</p>
@@ -66,6 +68,8 @@ export default function DecisionForm({ idx }: { idx: number }) {
         <button className="btn" onClick={() => { update({ d: roleData(idx) }); setShowErr(false); setMsg(`${role.name} strategy restored`); }}>Reset to role strategy</button>
         <button className="btn btn-danger ml-auto" onClick={() => { if (confirm(`Clear every decision for Team ${idx + 1}?`)) { const next = [...teams]; next[idx] = { ...emptyTeam(), touched: true }; save(next); setMsg("Cleared"); } }}>Clear</button>
       </div>
+
+      <MarketingAgent t={t} idx={idx} apply={(d) => { update({ d: { ...t.d, ...d } }); setMsg("Marketing plan applied"); }} />
 
       <section className="card mt-6">
         <div className="flex flex-wrap items-center justify-between gap-3">

@@ -1,4 +1,5 @@
 "use client";
+import Typewriter from "./Typewriter";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { OPEN, REGION_ROWS, ROLES, Report, Team, fmt, gbp } from "@/lib/sim";
@@ -42,7 +43,7 @@ export default function Reports() {
       <div className="team-hide flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wider text-brand">{now} · {done} quarter{done === 1 ? "" : "s"} completed</p>
-          <h1 className="text-3xl font-bold text-brand-dark">League table</h1>
+          <h1 className="text-3xl font-bold text-brand-dark"><Typewriter text="League table" speed={45} /></h1>
           <p className="mt-1 text-mute">Ranked by total profit across all quarters. Click a company to open its full report.</p>
         </div>
         <div className="no-print flex flex-wrap gap-2">

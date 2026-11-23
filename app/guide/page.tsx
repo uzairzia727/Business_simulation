@@ -1,3 +1,4 @@
+import Typewriter from "@/components/Typewriter";
 import Link from "next/link";
 
 export const metadata = { title: "Guide | StrataSim" };
@@ -5,7 +6,7 @@ export const metadata = { title: "Guide | StrataSim" };
 export default function Guide() {
   return (
     <div className="wrap max-w-3xl py-12 [&_h2]:mt-10 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-brand-dark [&_p]:mt-3 [&_p]:leading-7 [&_p]:text-slate-700">
-      <h1 className="text-3xl font-bold text-brand-dark">How the simulation works</h1>
+      <h1 className="text-3xl font-bold text-brand-dark"><Typewriter text="How the simulation works" speed={35} /></h1>
       <p>Eight competing companies market three products (P1, P2, P3) in Export, South, West and North. Each company is run by a strategist role. Teams enter quarterly decisions; the site produces management accounts and a league table.</p>
       <h2>Getting started</h2>
       <p>1. Assign each team its company from the <strong>Teams</strong> menu. 2. Every form starts pre-filled from the team&apos;s role. 3. Teams change the decisions they disagree with. 4. Open <strong>Reports</strong> to compare all eight companies.</p>

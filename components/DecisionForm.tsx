@@ -1,6 +1,7 @@
 "use client";
 import Typewriter from "./Typewriter";
 import MarketingAgent from "./MarketingAgent";
+import HRPanel from "./HRPanel";
 import { PolicyNotice } from "./Regulator";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -72,6 +73,7 @@ export default function DecisionForm({ idx }: { idx: number }) {
       </div>
 
       <MarketingAgent t={t} idx={idx} apply={(d) => { update({ d: { ...t.d, ...d } }); setMsg("Marketing plan applied"); }} />
+      <HRPanel t={t} idx={idx} update={(patch) => { update(patch); setMsg("HR updated"); }} />
 
       <section className="card mt-6">
         <div className="flex flex-wrap items-center justify-between gap-3">

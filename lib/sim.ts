@@ -117,7 +117,7 @@ export function roleData(i: number): Values {
 
 export type Meta = { year: string; quarter: string; simCode: string; groupNo: string };
 export type QuarterSummary = { label: string; revenue: number; net: number; cash: number; share: number; scenario?: string; ksf?: number };
-export type Team = Meta & { d: Values; report: Report | null; touched?: boolean; agents?: Agents; aiRun?: boolean; aiNote?: string; ai?: ReturnType<typeof agentImpact>; ksf?: { items: KsfScore[]; overall: number }; pos?: Position; history?: QuarterSummary[] };
+export type Team = Meta & { d: Values; report: Report | null; touched?: boolean; agents?: Agents; aiRun?: boolean; aiNote?: string; ai?: ReturnType<typeof agentImpact>; ksf?: { items: KsfScore[]; overall: number }; hr?: HR; pos?: Position; history?: QuarterSummary[] };
 
 export const isBlank = (v: unknown) => v === null || v === undefined || String(v).trim() === "";
 const n = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : 0);
@@ -148,6 +148,26 @@ export type AgentId = (typeof AGENTS)[number]["id"];
 export type Agents = Partial<Record<AgentId, boolean>>;
 export const AGENT_COST = 12000; // per agent per quarter
 const on = (ag: Agents | undefined, id: AgentId) => !!ag?.[id];
+
+// ---------- HR: the management team. Each manager's skill (0-100) improves one part of the business. ----------
+export const POSITIONS = {
+  ops: { name: "Operations Manager", effect: "Up to +8% worker hours and −6% factory overheads", base: 10000 },
+  mkt: { name: "Marketing Manager", effect: "Up to +15% effect from marketing spend", base: 16000 },
+  sales: { name: "Sales Manager", effect: "Up to +12% sales coverage from the sales force", base: 12000 },
+  fin: { name: "Finance Manager", effect: "Up to −30% interest, −15% money owed by customers, −8% management budget", base: 10000 },
+  rnd: { name: "R&D Manager", effect: "Up to +30% quality gained from research", base: 14000 },
+  hr: { name: "HR Manager", effect: "Up to −60% staff turnover and +25% effect from training", base: 8000 },
+} as const;
+export type PositionId = keyof typeof POSITIONS;
+export type Manager = { name: string; skill: number; salary: number; asking: number; since: string };
+export type Candidate = {
+  id: string; position: PositionId; name: string; years: number; education: string; lastRole: string;
+  skill: number; cv: number; interview?: number; asking: number;
+  status: "new" | "shortlisted" | "hold" | "rejected" | "hired"; ai?: string; aiNote?: string;
+};
+export type HR = { managers?: Partial<Record<PositionId, Manager>>; candidates?: Candidate[]; log?: string[]; severance?: number };
+const mg = (hr: HR | undefined, id: PositionId) => (hr?.managers?.[id]?.skill ?? 0) / 100;
+export const hrCost = (hr?: HR) => Object.values(hr?.managers ?? {}).reduce((s, m) => s + (m?.salary ?? 0), 0) + (hr?.severance ?? 0);
 
 // ---------- Economy: one scenario applies to the whole market each quarter ----------
 export type Econ = { scenario: ScenarioId; gdp: number; policies?: PolicyId[] };
@@ -213,22 +233,22 @@ export type Grid = number[][]; // [region][product]
 type Num = Record<string, number>;
 const toNum = (raw: Values): Num => Object.fromEntries(ALL_IDS.map((id) => [id, n(raw[id])]));
 
-export function brand(d: Num, pos: Position, p: number) {
+export function brand(d: Num, pos: Position, p: number, rnd = 0) {
   const promo = (d[`p${p + 1}advert`] + d[`p${p + 1}trade`] + d[`p${p + 1}merch`]) /
     (BENCH[`p${p + 1}advert`] + BENCH[`p${p + 1}trade`] + BENCH[`p${p + 1}merch`]);
   return {
     goodwill: 0.5 * pos.goodwill[p] + 0.5 * promo,
-    quality: 0.75 * pos.quality[p] + 0.25 * (d[`research${p + 1}`] / BENCH[`research${p + 1}`]),
+    quality: 0.75 * pos.quality[p] + 0.25 * (d[`research${p + 1}`] / BENCH[`research${p + 1}`]) * (1 + 0.3 * rnd),
     improved: Math.max(pos.improved[p], Math.min(1, Math.max(0, d[`major${p + 1}`]))),
   };
 }
 
-function attractiveness(d: Num, pos: Position, g: number, p: number, ag?: Agents, elasticity = 2.5, econ?: Econ) {
+function attractiveness(d: Num, pos: Position, g: number, p: number, ag?: Agents, elasticity = 2.5, econ?: Econ, hr?: HR) {
   const priceKey = `p${p + 1}${g === 0 ? "export" : "home"}`;
-  const b = brand(d, pos, p);
+  const b = brand(d, pos, p, mg(hr, "rnd"));
   const price = Math.max(1, d[priceKey]) / BENCH[priceKey];
-  const marketing = Math.max(0.05, b.goodwill);
-  const coverage = Math.max(0.1, (d[SALES_KEY[g]] * (on(ag, "ls") ? 1.15 : 1)) / BENCH[SALES_KEY[g]]);
+  const marketing = Math.max(0.05, b.goodwill * (1 + 0.15 * mg(hr, "mkt")));
+  const coverage = Math.max(0.1, (d[SALES_KEY[g]] * (on(ag, "ls") ? 1.15 : 1) * (1 + 0.12 * mg(hr, "sales"))) / BENCH[SALES_KEY[g]]);
   const quality = (1 + 0.12 * b.improved) * Math.max(0.2, b.quality) ** 0.25;
   const credit = (Math.max(10, d.credit) / BENCH.credit) ** 0.1;
   const ai = (on(ag, "mi") ? 1.05 : 1) * (on(ag, "cs") ? 1.06 : 1) * (has(econ, "standards") && b.quality < QUALITY_STD ? 0.8 : 1);
@@ -244,7 +264,7 @@ function available(d: Num, pos: Position): Grid {
   }));
 }
 
-export function market(all: { d: Values; pos?: Position; agents?: Agents }[], econ?: Econ) {
+export function market(all: { d: Values; pos?: Position; agents?: Agents; hr?: HR }[], econ?: Econ) {
   const e = sc(econ);
   const ds = all.map((t) => regulate(toNum(t.d), econ));
   const ps = all.map((t) => t.pos ?? initialPosition());
@@ -253,7 +273,7 @@ export function market(all: { d: Values; pos?: Position; agents?: Agents }[], ec
   const sold: Grid[] = ds.map(() => REGION_ROWS.map(() => [0, 0, 0]));
   const avail = ds.map((d, i) => available(d, ps[i]));
   REGION_ROWS.forEach((_, g) => [0, 1, 2].forEach((p) => {
-    const at = ds.map((d, i) => attractiveness(d, ps[i], g, p, all[i].agents, e.elasticity, econ));
+    const at = ds.map((d, i) => attractiveness(d, ps[i], g, p, all[i].agents, e.elasticity, econ, all[i].hr));
     const sumA = at.reduce((s, x) => s + x.a, 0) || 1;
     const avgPrice = at.reduce((s, x) => s + x.price, 0) / k;
     const avgMkt = at.reduce((s, x) => s + x.marketing, 0) / k;
@@ -283,10 +303,10 @@ export function market(all: { d: Values; pos?: Position; agents?: Agents }[], ec
   return { demand, sold, adjusted };
 }
 
-type Run = { d: Values; quarter: string; pos?: Position; agents?: Agents };
+type Run = { d: Values; quarter: string; pos?: Position; agents?: Agents; hr?: HR };
 export function calculateAll(all: Run[], econ?: Econ) {
   const m = market(all, econ);
-  return all.map((t, i) => calculate(m.adjusted[i], t.quarter, m.sold[i], m.demand[i], t.pos, t.agents, econ));
+  return all.map((t, i) => calculate(m.adjusted[i], t.quarter, m.sold[i], m.demand[i], t.pos, t.agents, econ, t.hr));
 }
 
 // With-vs-without comparison: rerun the market with one company's agents changed, rivals unchanged.
@@ -305,7 +325,7 @@ export function agentImpact(all: Run[], i: number, econ?: Econ) {
 
 export type Report = ReturnType<typeof calculate>;
 
-export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Grid, demandIn?: Grid, posIn?: Position, ag?: Agents, econ?: Econ) {
+export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Grid, demandIn?: Grid, posIn?: Position, ag?: Agents, econ?: Econ, hr?: HR) {
   const pos = posIn ?? initialPosition();
   const e = sc(econ);
   const d = regulate(toNum(raw), econ);
@@ -334,7 +354,11 @@ export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Gr
   const salesForce = d.exportSales + d.southSales + d.westSales + d.northSales;
   const workers = Math.max(0, pos.workers + d.recruitWorkers - d.dismissWorkers);
   const shiftFactor = d.shift <= 1 ? 1 : d.shift === 2 ? 1.15 : 1.33;
-  const hoursCap = workers * 13 * 37.5 * shiftFactor * (1 + 0.04 * Math.min(d.trainWorkers, workers));
+  const hoursCap = workers * 13 * 37.5 * shiftFactor * (1 + 0.04 * (1 + 0.25 * mg(hr, "hr")) * Math.min(d.trainWorkers, workers)) * (1 + 0.08 * mg(hr, "ops"));
+  // Staff turnover: more workers leave when pay is below the market wage; training and an HR manager keep them.
+  const marketWage = 6.95 * e.wages;
+  const turnover = Math.min(0.25, Math.max(0.01, 0.03 + Math.max(0, (marketWage - wage) / marketWage) * 0.6 - 0.002 * Math.min(d.trainWorkers, 10))) * (1 - 0.6 * mg(hr, "hr"));
+  const leavers = Math.round(workers * turnover);
   const otHours = Math.max(0, hoursReq - hoursCap) * (on(ag, "ps") ? 0.5 : 1);
   const wages = Math.min(hoursReq, hoursCap) * wage + otHours * wage * 1.5;
   const advert = (d.p1advert + d.p2advert + d.p3advert) * 1000;
@@ -343,20 +367,21 @@ export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Gr
   const research = (d.research1 + d.research2 + d.research3) * 1000;
   const salesSalary = d.salary * 100 * salesForce;
   const commission = revenue * (d.commission / 100);
-  const mgmt = d.budget * 1000;
+  const mgmt = d.budget * 1000 * (1 - 0.08 * mg(hr, "fin"));
   const maint = d.maintenance * wage * 1.25;
   const machines = Math.max(0, pos.machines + d.machinesOrder - d.machinesSell);
   const vans = Math.max(0, pos.vans + d.vansBuy - d.vansSell);
   const depMachines = pos.machineNBV * 0.031;
   const depVans = pos.vehicleNBV * 0.05;
-  const factory = OPEN.factoryBase + machines * 2200 + maint;
+  const factory = (OPEN.factoryBase + machines * 2200 + maint) * (1 - 0.06 * mg(hr, "ops"));
   const transport = d.deliveries * 8500 + vans * 420;
   const sellingOH = advert + trade + merch + salesSalary + commission + transport;
   // Regulator: fines for advertising above the limit, plus plain-English notices of anything adjusted.
   const raw0 = toNum(raw);
   const adExcess = has(econ, "adCap") ? [1, 2, 3].reduce((s, p) => s + Math.max(0, d[`p${p}advert`] - AD_CAP), 0) : 0;
   const fines = adExcess * 1000 * 2;
-  const adminOH = mgmt + research + agentCost + fines + (d.infoCompanies ? 2500 : 0) + (d.marketShares ? 4000 : 0);
+  const managerSalaries = hrCost(hr);
+  const adminOH = mgmt + research + agentCost + fines + managerSalaries + (d.infoCompanies ? 2500 : 0) + (d.marketShares ? 4000 : 0);
   const prodOH = factory + depMachines;
   // Production cost is shared across products by material content; unsold units are carried as finished-goods stock.
   const productionCost = materialsConsumedCost + wages + prodOH;
@@ -367,12 +392,12 @@ export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Gr
   const operating = gross - sellingOH - adminOH - depVans;
   const capex = d.machinesOrder * 80000 + d.vansBuy * 12000;
   const assetSales = d.machinesSell * (pos.machineNBV / Math.max(1, pos.machines)) * 0.45 + d.vansSell * 4000;
-  const debtors = ((revenue * Math.min(d.credit, 90)) / 90) * (on(ag, "fc") ? 0.75 : 1);
+  const debtors = ((revenue * Math.min(d.credit, 90)) / 90) * (on(ag, "fc") ? 0.75 : 1) * (1 - 0.15 * mg(hr, "fin"));
   const creditors = materialsPurchased * 0.35;
   // Last quarter's debtors are collected and last quarter's creditors are paid this quarter.
   let cash = pos.cash + (revenue - debtors + pos.debtors) - (materialsPurchased - creditors + pos.creditors)
     - wages - sellingOH - adminOH - factory - capex + assetSales;
-  const interest = (cash < 0 ? (Math.abs(cash) * e.rate) / 4 : 0) * (on(ag, "fc") ? 0.7 : 1);
+  const interest = (cash < 0 ? (Math.abs(cash) * e.rate) / 4 : 0) * (on(ag, "fc") ? 0.7 : 1) * (1 - 0.3 * mg(hr, "fin"));
   cash -= interest;
   const pbt = operating - interest;
   const tax = pbt > 0 ? pbt * (has(econ, "taxRise") ? 0.29 : OPEN.taxRate) : 0;
@@ -386,9 +411,9 @@ export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Gr
   const reserves = pos.reserves + net - dividend;
   const netAssets = OPEN.property + machineNBV + vehicleNBV + matValue + fgValue + debtors + cashShown - creditors - overdraft;
   const mNeed = u[0] * OPEN.mhrs[0] + u[1] * OPEN.mhrs[1] + u[2] * OPEN.mhrs[2];
-  const brands = [0, 1, 2].map((p) => brand(d, pos, p));
+  const brands = [0, 1, 2].map((p) => brand(d, pos, p, mg(hr, "rnd")));
   const close: Position = {
-    cash, debtors, creditors, machines, vans, workers, materialStock, fg: unsold, fgValue, matValue, machineNBV, vehicleNBV, reserves,
+    cash, debtors, creditors, machines, vans, workers: workers - leavers, materialStock, fg: unsold, fgValue, matValue, machineNBV, vehicleNBV, reserves,
     quality: brands.map((b) => b.quality), goodwill: brands.map((b) => b.goodwill), improved: brands.map((b) => b.improved),
   };
   const notices: string[] = [];
@@ -398,7 +423,7 @@ export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Gr
   if (fines) notices.push(`Advertising Rs ${adExcess}k over the limit: fined ${gbp(fines)}.`);
   if (has(econ, "standards")) brands.forEach((b, p) => { if (b.quality < QUALITY_STD) notices.push(`Product ${p + 1} failed quality standards (index ${b.quality.toFixed(2)}): 20% fewer customers. Spend more on research.`); });
   return {
-    fines, notices,
+    fines, notices, managerSalaries, leavers, turnover,
     agentsOn, agentCost, u, soldU, demandU, unsold, lostSales, fgValue, productionCost, sold, demand, revenue,
     materialsConsumedCost, materialsPurchased, wages, otHours, hoursReq, hoursCap,
     advert, trade, merch, research, salesSalary, commission, mgmt, sellingOH, adminOH, prodOH,

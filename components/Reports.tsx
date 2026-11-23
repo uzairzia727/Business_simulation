@@ -194,6 +194,10 @@ export function TeamReport({ t, idx, controls }: { t: Team; idx: number; control
             <Block title="Units delivered by region">
               <Table head={["Region", "P1", "P2", "P3"]} rows={REGION_ROWS.map((row) => [row[0], ...row.slice(1).map((k) => fmt(d[k]))])} />
             </Block>
+            <Block title="People">
+              <Table head={["Measure", "Value"]} rows={[["Managers in post", Object.values(t.hr?.managers ?? {}).map((m) => m?.name).join(", ") || "None"],
+                ["Management salaries (incl. severance)", gbp(r.managerSalaries)], ["Workers", fmt(r.workers)], ["Workers expected to leave", `${r.leavers} (${(r.turnover * 100).toFixed(1)}%)`]]} />
+            </Block>
             {r.notices.length > 0 && (
               <Block title="Regulator notices">
                 <ul className="list-disc pl-5 text-sm">{r.notices.map((n) => <li key={n}>{n}</li>)}</ul>

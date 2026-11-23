@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { closeHR } from "./hr";
 import { ROLES, TEAMS, Team, emptyTeam, autofill, calculateAll, agentImpact, ksfAll, Econ, DEFAULT_ECON, SCENARIOS, POLICIES } from "./sim";
 
 const KEY = "strataSimTeamsV3";
@@ -57,6 +58,7 @@ export function useTeams() {
       const q = Number(t.quarter) || 1, y = Number(t.year) || 2026;
       return {
         ...t,
+        hr: closeHR(t.hr, SCENARIOS[e.scenario].inflation, `Y${y} Q${q}`),
         pos: r.close,
         history: [...(t.history ?? []), {
           label: `Y${y} Q${q}`, revenue: r.revenue, net: r.net, cash: r.cashShown - r.overdraft,

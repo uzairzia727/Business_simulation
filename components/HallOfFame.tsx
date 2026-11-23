@@ -32,12 +32,12 @@ export default function HallOfFame() {
     <div className="wrap py-10">
       <p className="text-sm font-semibold uppercase tracking-wider text-brand">Win record</p>
       <h1 className="text-3xl font-bold text-brand-dark"><Typewriter text="Hall of fame" speed={45} /></h1>
-      <p className="mt-1 max-w-2xl text-mute">Every finished game is recorded here with its winner, winning margin and final standings. Use <strong>Finish game</strong> on the League table to record a game. Records are kept in this browser.</p>
+      <p className="mt-1 max-w-2xl text-mute">Every finished game is recorded here with its winner, winning margin and final standings. Use <strong>Finish game</strong> on the Instructor page to record a game. Records are kept in this browser.</p>
 
       {!games.length ? (
         <div className="card mt-8 text-center">
           <p className="font-semibold">No games recorded yet</p>
-          <p className="mt-1 text-sm text-mute">Play one or more quarters, then click Finish game on the League table.</p>
+          <p className="mt-1 text-sm text-mute">Play one or more quarters, then click Finish game on the Instructor page.</p>
           <Link href="/reports" className="btn btn-accent mt-4">Open the league table</Link>
         </div>
       ) : (

@@ -172,7 +172,7 @@ const mg = (hr: HR | undefined, id: PositionId) => (hr?.managers?.[id]?.skill ??
 export const hrCost = (hr?: HR) => Object.values(hr?.managers ?? {}).reduce((s, m) => s + (m?.salary ?? 0), 0) + (hr?.severance ?? 0);
 
 // ---------- Economy: one scenario applies to the whole market each quarter ----------
-export type Econ = { scenario: ScenarioId; gdp: number; policies?: PolicyId[]; industry?: string };
+export type Econ = { scenario: ScenarioId; gdp: number; policies?: PolicyId[]; industry?: string; locked?: boolean; announcement?: string; pin?: string };
 export const SCENARIOS = {
   normal: { name: "Stable economy", desc: "Steady growth, normal prices and interest.", demand: 1, elasticity: 2.5, materials: 1, wages: 1, rate: 0.05, growth: 0.005, inflation: 0.02, unemployment: 0.05 },
   boom: { name: "Boom", desc: "Customers spend more; all markets grow. Rates edge up.", demand: 1.15, elasticity: 2.2, materials: 1.03, wages: 1.02, rate: 0.06, growth: 0.015, inflation: 0.035, unemployment: 0.04 },

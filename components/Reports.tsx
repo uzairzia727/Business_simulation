@@ -4,12 +4,13 @@ import Typewriter from "./Typewriter";
 import { CHANNELS } from "@/lib/marketing";
 import Economy from "./Economy";
 import Regulator from "./Regulator";
+import Link from "next/link";
+import { Announcement } from "./Instructor";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { DEFAULT_ECON, KSF, OPEN, REGION_ROWS, ROLES, Report, Team, fmt, gbp } from "@/lib/sim";
-import { recordGame, useTeams } from "@/lib/store";
+import { KSF, OPEN, REGION_ROWS, ROLES, Report, Team, fmt, gbp } from "@/lib/sim";
+import { useTeams } from "@/lib/store";
 import RoleIcon, { ROLE_BAR } from "./RoleIcon";
-import Competitors from "./Competitors";
 
 type Cell = string | number;
 function Table({ head, rows }: { head: string[]; rows: Cell[][] }) {
@@ -30,7 +31,7 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
 
 export default function Reports() {
   const router = useRouter();
-  const { teams, ready, save, generateAll, closeQuarter, runCompetitors, econ, setEcon } = useTeams();
+  const { teams, ready, generateAll, econ, setEcon } = useTeams();
 
   // Any company without a report is auto-filled from its role and calculated.
   useEffect(() => { if (ready && teams.some((t) => !t.report)) generateAll(teams); }, [ready, teams, generateAll]);
@@ -53,23 +54,14 @@ export default function Reports() {
           <p className="mt-1 text-mute">Ranked by total profit across all quarters. Click a company to open its full report.</p>
         </div>
         <div className="no-print flex flex-wrap gap-2">
-          <button className="btn btn-accent" onClick={() => { if (confirm(`Close ${now} for all 8 companies? Results are locked in and the next quarter starts from each company's closing position.`)) closeQuarter(teams); }}>Close quarter &amp; start next</button>
-          <button className="btn" onClick={() => generateAll(teams.map((x) => ({ ...x, report: null })))}>Recalculate</button>
           <button className="btn btn-primary" onClick={() => window.print()}>Save as PDF</button>
-          <button className="btn" onClick={() => {
-            const name = prompt("Finish this game and record the winner in the Hall of fame. Game name (optional):", "");
-            if (name === null) return;
-            recordGame(teams, name);
-            if (confirm("Winner recorded. Start a new game from Quarter 1 now?")) { setEcon(DEFAULT_ECON, false); generateAll(teams.map(() => ({ year: "", quarter: "", simCode: "", groupNo: "", d: {}, report: null })), DEFAULT_ECON); }
-            router.push("/hall-of-fame");
-          }}>Finish game</button>
-          <button className="btn btn-danger" onClick={() => { if (confirm("Restart the whole simulation from Quarter 1? All quarters and edits will be lost.")) { setEcon(DEFAULT_ECON, false); generateAll(teams.map(() => ({ year: "", quarter: "", simCode: "", groupNo: "", d: {}, report: null })), DEFAULT_ECON); } }}>Reset all</button>
+          <Link href="/instructor" className="btn">Instructor controls</Link>
         </div>
       </div>
 
-      <Economy teams={teams} econ={econ} setEcon={setEcon} />
-      <Regulator teams={teams} econ={econ} setEcon={setEcon} />
-      <Competitors teams={teams} save={save} run={runCompetitors} />
+      <Announcement econ={econ} />
+      <Economy teams={teams} econ={econ} setEcon={setEcon} readOnly />
+      <Regulator teams={teams} econ={econ} setEcon={setEcon} readOnly />
 
       <section className="card mt-6 team-hide" id="league">
         <h2 className="mb-3 font-semibold">Ranking — total profit across all quarters</h2>

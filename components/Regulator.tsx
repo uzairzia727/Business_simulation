@@ -5,7 +5,7 @@ import { Econ, POLICIES, PolicyId, REGULATOR, Team, gbp } from "@/lib/sim";
 const IDS = Object.keys(POLICIES) as PolicyId[];
 
 // The regulator: the organiser switches policies on or off; every company must comply from the current quarter.
-export default function Regulator({ teams, econ, setEcon }: { teams: Team[]; econ: Econ; setEcon: (e: Econ) => void }) {
+export default function Regulator({ teams, econ, setEcon, readOnly }: { teams: Team[]; econ: Econ; setEcon: (e: Econ) => void; readOnly?: boolean }) {
   const { t: w } = useIndustry();
   const active = econ.policies ?? [];
   const set = (p: PolicyId[]) => setEcon({ ...econ, policies: p });
@@ -20,17 +20,17 @@ export default function Regulator({ teams, econ, setEcon }: { teams: Team[]; eco
           <h2 id="reg-h" className="font-semibold">Regulator: {w(REGULATOR)}</h2>
           <p className="max-w-2xl text-sm text-mute">Switch policies on to change the rules for every company. Caps and floors are applied automatically; breaches are fined. Teams should adapt their decisions to each new policy.</p>
         </div>
-        <div className="no-print flex flex-wrap gap-2">
+        {!readOnly && <div className="no-print flex flex-wrap gap-2">
           <button className="btn" onClick={announce} disabled={active.length === IDS.length}>Announce a new policy</button>
           <button className="btn" onClick={() => set([])} disabled={!active.length}>Lift all policies</button>
-        </div>
+        </div>}
       </div>
 
       <div className="no-print mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        {IDS.map((id) => {
+        {IDS.filter((id) => !readOnly || active.includes(id)).map((id) => {
           const on = active.includes(id);
           return (
-            <button key={id} type="button" aria-pressed={on} onClick={() => toggle(id)}
+            <button key={id} type="button" aria-pressed={on} disabled={readOnly} onClick={() => toggle(id)}
               className={`rounded-md border p-3 text-left transition ${on ? "border-brand bg-[#eaf0ec]" : "border-line hover:bg-stone-50"}`}>
               <span className="flex items-center justify-between gap-2">
                 <span className="text-sm font-semibold">{w(POLICIES[id].name)}</span>

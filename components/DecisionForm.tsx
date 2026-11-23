@@ -4,6 +4,7 @@ import Typewriter from "./Typewriter";
 import MarketingAgent from "./MarketingAgent";
 import HRPanel from "./HRPanel";
 import WhatIf from "./WhatIf";
+import { Announcement } from "./Instructor";
 import { PolicyNotice } from "./Regulator";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -25,10 +26,13 @@ export default function DecisionForm({ idx }: { idx: number }) {
   const t = ready && !teams[idx].touched ? autofill(teams[idx], idx) : teams[idx];
 
   const update = (patch: Partial<Team>) => {
+    // While the instructor has locked decisions, nothing on this page can change them.
+    if (econ.locked) { setMsg("Decisions are locked by the instructor."); return false; }
     const next = [...teams];
     next[idx] = { ...t, ...patch, touched: true, report: null };
     save(next);
     setMsg("Saved");
+    return true;
   };
   const setD = (id: string, v: string) => update({ d: { ...t.d, [id]: v }, ...(/^p[123](advert|trade|merch)$/.test(id) ? { channels: null } : {}) });
   const missing = ALL_IDS.filter((id) => isBlank(t.d[id])).concat(META.filter(([k]) => isBlank(t[k])).map(([k]) => k));
@@ -61,6 +65,7 @@ export default function DecisionForm({ idx }: { idx: number }) {
         <p role="status" aria-live="polite" className="text-sm font-medium text-emerald-700">{msg}</p>
       </div>
 
+      <Announcement econ={econ} />
       <PolicyNotice team={teams[idx]} econ={econ} />
       {t.aiRun && (
         <div className="mt-4 rounded-lg border border-line bg-[#eaf0ec] p-4 text-sm">
@@ -71,13 +76,13 @@ export default function DecisionForm({ idx }: { idx: number }) {
       <div className="no-print sticky top-16 z-30 mt-6 flex flex-wrap gap-2 rounded-lg border border-line bg-white/90 p-3 shadow-sm backdrop-blur">
         <button className="btn btn-primary" onClick={generate}>Generate report</button>
         <button className="btn btn-accent" onClick={() => { generateAll(teams.map((x, i) => (i === idx ? t : x))); router.push("/reports"); }}>Auto-generate all 8 reports</button>
-        <button className="btn" onClick={() => { update({ d: roleData(idx) }); setShowErr(false); setMsg(`${role.name} strategy restored`); }}>Reset to role strategy</button>
-        <button className="btn btn-danger ml-auto" onClick={() => { if (confirm(`Clear every decision for Team ${idx + 1}?`)) { const next = [...teams]; next[idx] = { ...emptyTeam(), touched: true }; save(next); setMsg("Cleared"); } }}>Clear</button>
+        <button className="btn" disabled={!!econ.locked} onClick={() => { if (update({ d: roleData(idx) })) { setShowErr(false); setMsg(`${role.name} strategy restored`); } }}>Reset to role strategy</button>
+        <button className="btn btn-danger ml-auto" disabled={!!econ.locked} onClick={() => { if (confirm(`Clear every decision for Team ${idx + 1}?`)) { const next = [...teams]; next[idx] = { ...emptyTeam(), touched: true }; save(next); setMsg("Cleared"); } }}>Clear</button>
       </div>
 
-      <MarketingAgent t={t} idx={idx} apply={(d, plan) => { update({ d: { ...t.d, ...d }, channels: plan }); setMsg("Channel plan applied"); }} />
-      <HRPanel t={t} idx={idx} update={(patch) => { update(patch); setMsg("HR updated"); }} />
-      <WhatIf teams={teams} idx={idx} t={t} econ={econ} apply={(d, label) => { update({ d, ...(/marketing/.test(label) ? { channels: null } : {}) }); setMsg(`Applied: ${label}`); }} />
+      <MarketingAgent t={t} idx={idx} apply={(d, plan) => { if (update({ d: { ...t.d, ...d }, channels: plan })) setMsg("Channel plan applied"); }} />
+      <HRPanel t={t} idx={idx} update={(patch) => { if (update(patch)) setMsg("HR updated"); }} />
+      <WhatIf teams={teams} idx={idx} t={t} econ={econ} apply={(d, label) => { if (update({ d, ...(/marketing/.test(label) ? { channels: null } : {}) })) setMsg(`Applied: ${label}`); }} />
 
       <section className="card mt-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -115,6 +120,7 @@ export default function DecisionForm({ idx }: { idx: number }) {
         </div>
       </section>
 
+      <fieldset disabled={!!econ.locked} className="contents">
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         {groups.map(([g, fs]) => (
           <section key={g} className={`card ${g === "marketing" ? "lg:col-span-2" : ""}`}>
@@ -148,6 +154,7 @@ export default function DecisionForm({ idx }: { idx: number }) {
           </div>
         </section>
       </div>
+      </fieldset>
       {t.report && (
         <div className="mt-12 border-t-4 border-brand pt-8">
           <TeamReport t={t} idx={idx} controls={<><button className="btn" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Back to decisions</button><SavePdf /></>} />

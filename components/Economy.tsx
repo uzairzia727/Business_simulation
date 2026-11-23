@@ -7,7 +7,7 @@ const IDS = Object.keys(SCENARIOS) as ScenarioId[];
 const pct = (x: number, dp = 1) => `${(x * 100).toFixed(dp)}%`;
 
 // Economic scenario for the current quarter (set by the organiser) plus the economic report for the whole market.
-export default function Economy({ teams, econ, setEcon }: { teams: Team[]; econ: Econ; setEcon: (e: Econ) => void }) {
+export default function Economy({ teams, econ, setEcon, readOnly }: { teams: Team[]; econ: Econ; setEcon: (e: Econ) => void; readOnly?: boolean }) {
   const s = SCENARIOS[econ.scenario];
   const rs = teams.map((t) => t.report!);
   const sum = (f: (r: (typeof rs)[number]) => number) => rs.reduce((a, r) => a + f(r), 0);
@@ -38,11 +38,12 @@ export default function Economy({ teams, econ, setEcon }: { teams: Team[]; econ:
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 id="econ-h" className="font-semibold">Economy this quarter</h2>
-          <p className="max-w-2xl text-sm text-mute">The organiser sets the economic scenario at the start of each quarter. It applies to all 8 companies and stays in place until changed.</p>
+          <p className="max-w-2xl text-sm text-mute">{readOnly && <span className="font-semibold text-ink">{s.name}. </span>}The organiser sets the economic scenario at the start of each quarter. It applies to all 8 companies and stays in place until changed.</p>
         </div>
-        <button className="btn no-print" onClick={random}>Random scenario</button>
+        {!readOnly && <button className="btn no-print" onClick={random}>Random scenario</button>}
       </div>
 
+      {!readOnly && <>
       <div className="no-print mt-4 rounded-md border border-line bg-stone-50 p-3">
         <label className="text-sm font-semibold" htmlFor="industry">Industry</label>
         <div className="mt-1 flex flex-wrap items-center gap-3">
@@ -66,6 +67,8 @@ export default function Economy({ teams, econ, setEcon }: { teams: Team[]; econ:
           );
         })}
       </div>
+
+      </>}
 
       <h3 className="mt-6 font-serif text-lg font-semibold">Economic report</h3>
       <dl className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-md border border-line bg-line text-sm sm:grid-cols-4">

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ROLES } from "@/lib/sim";
 
-const LINKS = [["/", "Home"], ["/guide", "Guide"], ["/reports", "Reports"], ["/hall-of-fame", "Hall of fame"]] as const;
+const LINKS = [["/", "Home"], ["/guide", "Guide"], ["/reports", "Reports"], ["/hall-of-fame", "Hall of fame"], ["/instructor", "Instructor"]] as const;
 
 export default function Header() {
   const path = usePathname();

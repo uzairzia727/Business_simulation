@@ -68,7 +68,7 @@ export function PolicyNotice({ team, econ }: { team: Team; econ: Econ }) {
       <ul className="mt-1 list-disc pl-5 text-mute">{active.map((id) => <li key={id}><span className="font-medium text-ink">{POLICIES[id].name}:</span> {POLICIES[id].rule}</li>)}</ul>
       {notices.length > 0 && (
         <>
-          <p className="mt-3 font-semibold text-red-800">Your company's latest report</p>
+          <p className="mt-3 font-semibold text-red-800">Your company&apos;s latest report</p>
           <ul className="mt-1 list-disc pl-5 text-red-800">{notices.map((n) => <li key={n}>{n}</li>)}</ul>
         </>
       )}

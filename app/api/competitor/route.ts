@@ -15,7 +15,8 @@ Goal: maximise total profit over the coming quarters while staying true to your 
 How the market works: customers split between companies by relative price (strongest effect), marketing spend
 (builds brand over time), salespeople per region, product quality (research builds it over time; major improvements
 are permanent) and credit days. The economy (boom, recession, inflation, rate shock) changes total demand, price sensitivity,
-material and wage costs, and the overdraft interest rate: adapt to it. You sell the smaller of units delivered and customer demand: unsold units become stock,
+material and wage costs, and the overdraft interest rate: adapt to it. The regulator's policies in force
+(economy.regulatorPoliciesInForce) are binding: comply with them, e.g. stay under caps to avoid fines. You sell the smaller of units delivered and customer demand: unsold units become stock,
 shortfalls are lost sales. Overtime is expensive; negative cash costs interest.
 Decision ids:
 ${FIELD_GUIDE}

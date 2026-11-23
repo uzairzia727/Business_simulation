@@ -1,6 +1,7 @@
 "use client";
 import Typewriter from "./Typewriter";
 import MarketingAgent from "./MarketingAgent";
+import { PolicyNotice } from "./Regulator";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -12,7 +13,7 @@ const META: [keyof Team, string][] = [["year", "Year"], ["quarter", "Quarter (1â
 
 export default function DecisionForm({ idx }: { idx: number }) {
   const router = useRouter();
-  const { teams, ready, save, generateAll } = useTeams();
+  const { teams, ready, save, generateAll, econ } = useTeams();
   const [msg, setMsg] = useState("");
   const [showErr, setShowErr] = useState(false);
   const role = ROLES[idx];
@@ -56,6 +57,7 @@ export default function DecisionForm({ idx }: { idx: number }) {
         <p role="status" aria-live="polite" className="text-sm font-medium text-emerald-700">{msg}</p>
       </div>
 
+      <PolicyNotice team={teams[idx]} econ={econ} />
       {t.aiRun && (
         <div className="mt-4 rounded-lg border border-line bg-[#eaf0ec] p-4 text-sm">
           <p className="font-semibold text-brand-dark">This company is run by an AI competitor.</p>

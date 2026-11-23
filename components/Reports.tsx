@@ -1,6 +1,7 @@
 "use client";
 import Typewriter from "./Typewriter";
 import Economy from "./Economy";
+import Regulator from "./Regulator";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { DEFAULT_ECON, OPEN, REGION_ROWS, ROLES, Report, Team, fmt, gbp } from "@/lib/sim";
@@ -56,6 +57,7 @@ export default function Reports() {
       </div>
 
       <Economy teams={teams} econ={econ} setEcon={setEcon} />
+      <Regulator teams={teams} econ={econ} setEcon={setEcon} />
       <Competitors teams={teams} save={save} run={runCompetitors} />
 
       <section className="card mt-6 team-hide" id="league">
@@ -183,6 +185,12 @@ export function TeamReport({ t, idx, controls }: { t: Team; idx: number; control
             <Block title="Units delivered by region">
               <Table head={["Region", "P1", "P2", "P3"]} rows={REGION_ROWS.map((row) => [row[0], ...row.slice(1).map((k) => fmt(d[k]))])} />
             </Block>
+            {r.notices.length > 0 && (
+              <Block title="Regulator notices">
+                <ul className="list-disc pl-5 text-sm">{r.notices.map((n) => <li key={n}>{n}</li>)}</ul>
+                {r.fines > 0 && <p className="mt-2 text-sm font-semibold text-red-700">Fines this quarter: {gbp(r.fines)} (included in administration overheads)</p>}
+              </Block>
+            )}
             <Block title="Economic information">
               <Table head={["Measure", "Value"]} rows={[["Economic scenario", r.econ?.name ?? "Stable economy"], ["GDP index", fmt(r.gdp)], ["Unemployment rate", `${((r.econ?.unemployment ?? 0.05) * 100).toFixed(1)}%`],
                 ["Central bank rate", `${((r.econ?.rate ?? 0.05) * 100).toFixed(1)}%`], ["Material price next quarter (Rs/000)", fmt(r.nextMat)]]} />

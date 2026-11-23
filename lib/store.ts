@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { ROLES, TEAMS, Team, emptyTeam, autofill, calculateAll, agentImpact, Econ, DEFAULT_ECON, SCENARIOS } from "./sim";
+import { ROLES, TEAMS, Team, emptyTeam, autofill, calculateAll, agentImpact, Econ, DEFAULT_ECON, SCENARIOS, POLICIES } from "./sim";
 
 const KEY = "strataSimTeamsV3";
 const ECON_KEY = "strataSimEconomy";
@@ -122,7 +122,7 @@ function competitorBrief(teams: Team[], i: number) {
     economy: economyBrief(),
     results: {
       quarter: `Y${t.year} Q${t.quarter}`, revenue: round(r.revenue), netProfit: round(r.net), cash: round(r.cashShown - r.overdraft),
-      overtimeHours: round(r.otHours), perProduct: [0, 1, 2].map((p) => ({ product: p + 1, demand: r.demandU[p], delivered: r.u[p], sold: r.soldU[p], unsold: r.unsold[p], lostSales: r.lostSales[p] })),
+      overtimeHours: round(r.otHours), regulatorNotices: r.notices, perProduct: [0, 1, 2].map((p) => ({ product: p + 1, demand: r.demandU[p], delivered: r.u[p], sold: r.soldU[p], unsold: r.unsold[p], lostSales: r.lostSales[p] })),
       history: t.history ?? [],
     },
     market: teams.map((x, k) => k === i || !x.report ? null : {
@@ -135,5 +135,6 @@ function competitorBrief(teams: Team[], i: number) {
 // Plain summary of the economy for the AI agents.
 export function economyBrief() {
   const e = loadEcon(), s = SCENARIOS[e.scenario];
-  return { scenario: s.name, meaning: s.desc, gdpIndex: e.gdp, interestRate: `${s.rate * 100}%`, inflation: `${s.inflation * 100}%`, demandVsNormal: `${Math.round((s.demand - 1) * 100)}%` };
+  return { scenario: s.name, meaning: s.desc, gdpIndex: e.gdp, interestRate: `${s.rate * 100}%`, inflation: `${s.inflation * 100}%`, demandVsNormal: `${Math.round((s.demand - 1) * 100)}%`,
+    regulatorPoliciesInForce: (e.policies ?? []).map((p) => `${POLICIES[p].name}: ${POLICIES[p].rule}`) };
 }

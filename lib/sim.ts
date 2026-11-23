@@ -150,7 +150,7 @@ export const AGENT_COST = 12000; // per agent per quarter
 const on = (ag: Agents | undefined, id: AgentId) => !!ag?.[id];
 
 // ---------- Economy: one scenario applies to the whole market each quarter ----------
-export type Econ = { scenario: ScenarioId; gdp: number };
+export type Econ = { scenario: ScenarioId; gdp: number; policies?: PolicyId[] };
 export const SCENARIOS = {
   normal: { name: "Stable economy", desc: "Steady growth, normal prices and interest.", demand: 1, elasticity: 2.5, materials: 1, wages: 1, rate: 0.05, growth: 0.005, inflation: 0.02, unemployment: 0.05 },
   boom: { name: "Boom", desc: "Customers spend more; all markets grow. Rates edge up.", demand: 1.15, elasticity: 2.2, materials: 1.03, wages: 1.02, rate: 0.06, growth: 0.015, inflation: 0.035, unemployment: 0.04 },
@@ -160,6 +160,32 @@ export const SCENARIOS = {
 } as const;
 export type ScenarioId = keyof typeof SCENARIOS;
 export const DEFAULT_ECON: Econ = { scenario: "normal", gdp: 734 };
+
+// ---------- Regulator: policies the authority can switch on; every company must comply ----------
+export const REGULATOR = "Industry Regulatory Authority";
+export const POLICIES = {
+  priceCap: { name: "Price cap on Product 1", rule: "Product 1 may not be sold above Rs 145 at home or abroad. Higher prices are cut to the cap." },
+  minWage: { name: "Minimum wage", rule: "Assembly wage must be at least Rs 7.50 per hour. Lower wages are raised to the minimum." },
+  adCap: { name: "Advertising limit", rule: "Advertising is limited to Rs 20k per product per quarter. Overspend is fined at twice the excess." },
+  standards: { name: "Quality standards", rule: "Products below the quality standard (index 0.90) lose certification and 20% of their customers. Research spending builds quality." },
+  taxRise: { name: "Corporate tax rise", rule: "Corporation tax rises from 19% to 29% of profit." },
+  importDuty: { name: "Import duty on materials", rule: "A 15% duty is added to the price of raw materials." },
+  creditRule: { name: "Fair payment rule", rule: "Customers may be given at most 45 days' credit. Longer terms are cut to 45 days." },
+  exportIncentive: { name: "Export incentive", rule: "Exporters receive a 5% rebate on export revenue." },
+} as const;
+export type PolicyId = keyof typeof POLICIES;
+const has = (e: Econ | undefined, p: PolicyId) => !!e?.policies?.includes(p);
+const AD_CAP = 20, PRICE_CAP = 145, MIN_WAGE = 7.5, MAX_CREDIT = 45, QUALITY_STD = 0.9;
+
+// Apply automatic compliance (caps and floors) to a company's decisions.
+function regulate(d: Num, e?: Econ): Num {
+  const x = { ...d };
+  if (has(e, "priceCap")) { x.p1home = Math.min(x.p1home, PRICE_CAP); x.p1export = Math.min(x.p1export, PRICE_CAP); }
+  if (has(e, "minWage")) x.wage = Math.max(x.wage, MIN_WAGE);
+  if (has(e, "creditRule")) x.credit = Math.min(x.credit, MAX_CREDIT);
+  return x;
+}
+
 const sc = (e?: Econ) => SCENARIOS[e?.scenario ?? "normal"] ?? SCENARIOS.normal;
 
 // ---------- Position: what a company carries from one quarter into the next ----------
@@ -197,7 +223,7 @@ export function brand(d: Num, pos: Position, p: number) {
   };
 }
 
-function attractiveness(d: Num, pos: Position, g: number, p: number, ag?: Agents, elasticity = 2.5) {
+function attractiveness(d: Num, pos: Position, g: number, p: number, ag?: Agents, elasticity = 2.5, econ?: Econ) {
   const priceKey = `p${p + 1}${g === 0 ? "export" : "home"}`;
   const b = brand(d, pos, p);
   const price = Math.max(1, d[priceKey]) / BENCH[priceKey];
@@ -205,7 +231,7 @@ function attractiveness(d: Num, pos: Position, g: number, p: number, ag?: Agents
   const coverage = Math.max(0.1, (d[SALES_KEY[g]] * (on(ag, "ls") ? 1.15 : 1)) / BENCH[SALES_KEY[g]]);
   const quality = (1 + 0.12 * b.improved) * Math.max(0.2, b.quality) ** 0.25;
   const credit = (Math.max(10, d.credit) / BENCH.credit) ** 0.1;
-  const ai = (on(ag, "mi") ? 1.05 : 1) * (on(ag, "cs") ? 1.06 : 1);
+  const ai = (on(ag, "mi") ? 1.05 : 1) * (on(ag, "cs") ? 1.06 : 1) * (has(econ, "standards") && b.quality < QUALITY_STD ? 0.8 : 1);
   return { a: price ** -elasticity * marketing ** 0.35 * coverage ** 0.3 * quality * credit * ai, price, marketing };
 }
 
@@ -220,14 +246,14 @@ function available(d: Num, pos: Position): Grid {
 
 export function market(all: { d: Values; pos?: Position; agents?: Agents }[], econ?: Econ) {
   const e = sc(econ);
-  const ds = all.map((t) => toNum(t.d));
+  const ds = all.map((t) => regulate(toNum(t.d), econ));
   const ps = all.map((t) => t.pos ?? initialPosition());
   const k = ds.length;
   const demand: Grid[] = ds.map(() => REGION_ROWS.map(() => [0, 0, 0]));
   const sold: Grid[] = ds.map(() => REGION_ROWS.map(() => [0, 0, 0]));
   const avail = ds.map((d, i) => available(d, ps[i]));
   REGION_ROWS.forEach((_, g) => [0, 1, 2].forEach((p) => {
-    const at = ds.map((d, i) => attractiveness(d, ps[i], g, p, all[i].agents, e.elasticity));
+    const at = ds.map((d, i) => attractiveness(d, ps[i], g, p, all[i].agents, e.elasticity, econ));
     const sumA = at.reduce((s, x) => s + x.a, 0) || 1;
     const avgPrice = at.reduce((s, x) => s + x.price, 0) / k;
     const avgMkt = at.reduce((s, x) => s + x.marketing, 0) / k;
@@ -282,7 +308,7 @@ export type Report = ReturnType<typeof calculate>;
 export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Grid, demandIn?: Grid, posIn?: Position, ag?: Agents, econ?: Econ) {
   const pos = posIn ?? initialPosition();
   const e = sc(econ);
-  const d = toNum(raw);
+  const d = regulate(toNum(raw), econ);
   const u = [1, 2, 3].map((p) => d[`p${p}exportQty`] + d[`p${p}southQty`] + d[`p${p}westQty`] + d[`p${p}northQty`]);
   const avail = available(d, pos);
   const sold = soldIn ?? avail;
@@ -292,10 +318,10 @@ export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Gr
   const unsold = u.map((x, p) => Math.max(0, x + pos.fg[p] - soldU[p]));
   const lostSales = demandU.map((x, p) => Math.max(0, x - soldU[p]));
   const revenue = [0, 1, 2].reduce((s, p) =>
-    s + sold[0][p] * d[`p${p + 1}export`] + (sold[1][p] + sold[2][p] + sold[3][p]) * d[`p${p + 1}home`], 0) * (on(ag, "pr") ? 1.02 : 1);
+    s + sold[0][p] * d[`p${p + 1}export`] * (has(econ, "exportIncentive") ? 1.05 : 1) + (sold[1][p] + sold[2][p] + sold[3][p]) * d[`p${p + 1}home`], 0) * (on(ag, "pr") ? 1.02 : 1);
   const agentsOn = AGENTS.filter((a) => on(ag, a.id)).length;
   const agentCost = agentsOn * AGENT_COST;
-  const matPrice = d.rawPrice * e.materials * (on(ag, "sp") ? 0.96 : 1);
+  const matPrice = d.rawPrice * e.materials * (has(econ, "importDuty") ? 1.15 : 1) * (on(ag, "sp") ? 0.96 : 1);
   const wage = d.wage * e.wages;
   const matUsed = u[0] * OPEN.bom[0] + u[1] * OPEN.bom[1] + u[2] * OPEN.bom[2];
   const materialsPurchased = d.rawUnits * matPrice;
@@ -326,7 +352,11 @@ export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Gr
   const factory = OPEN.factoryBase + machines * 2200 + maint;
   const transport = d.deliveries * 8500 + vans * 420;
   const sellingOH = advert + trade + merch + salesSalary + commission + transport;
-  const adminOH = mgmt + research + agentCost + (d.infoCompanies ? 2500 : 0) + (d.marketShares ? 4000 : 0);
+  // Regulator: fines for advertising above the limit, plus plain-English notices of anything adjusted.
+  const raw0 = toNum(raw);
+  const adExcess = has(econ, "adCap") ? [1, 2, 3].reduce((s, p) => s + Math.max(0, d[`p${p}advert`] - AD_CAP), 0) : 0;
+  const fines = adExcess * 1000 * 2;
+  const adminOH = mgmt + research + agentCost + fines + (d.infoCompanies ? 2500 : 0) + (d.marketShares ? 4000 : 0);
   const prodOH = factory + depMachines;
   // Production cost is shared across products by material content; unsold units are carried as finished-goods stock.
   const productionCost = materialsConsumedCost + wages + prodOH;
@@ -345,7 +375,7 @@ export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Gr
   const interest = (cash < 0 ? (Math.abs(cash) * e.rate) / 4 : 0) * (on(ag, "fc") ? 0.7 : 1);
   cash -= interest;
   const pbt = operating - interest;
-  const tax = pbt > 0 ? pbt * OPEN.taxRate : 0;
+  const tax = pbt > 0 ? pbt * (has(econ, "taxRise") ? 0.29 : OPEN.taxRate) : 0;
   const net = pbt - tax;
   const dividend = (d.dividend / 100) * OPEN.shares;
   cash -= dividend + tax;
@@ -361,7 +391,14 @@ export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Gr
     cash, debtors, creditors, machines, vans, workers, materialStock, fg: unsold, fgValue, matValue, machineNBV, vehicleNBV, reserves,
     quality: brands.map((b) => b.quality), goodwill: brands.map((b) => b.goodwill), improved: brands.map((b) => b.improved),
   };
+  const notices: string[] = [];
+  if (has(econ, "priceCap") && (raw0.p1home > PRICE_CAP || raw0.p1export > PRICE_CAP)) notices.push(`Product 1 price cut to the Rs ${PRICE_CAP} cap.`);
+  if (has(econ, "minWage") && raw0.wage < MIN_WAGE) notices.push(`Wage raised from Rs ${raw0.wage} to the Rs ${MIN_WAGE} minimum.`);
+  if (has(econ, "creditRule") && raw0.credit > MAX_CREDIT) notices.push(`Credit cut from ${raw0.credit} to ${MAX_CREDIT} days.`);
+  if (fines) notices.push(`Advertising Rs ${adExcess}k over the limit: fined ${gbp(fines)}.`);
+  if (has(econ, "standards")) brands.forEach((b, p) => { if (b.quality < QUALITY_STD) notices.push(`Product ${p + 1} failed quality standards (index ${b.quality.toFixed(2)}): 20% fewer customers. Spend more on research.`); });
   return {
+    fines, notices,
     agentsOn, agentCost, u, soldU, demandU, unsold, lostSales, fgValue, productionCost, sold, demand, revenue,
     materialsConsumedCost, materialsPurchased, wages, otHours, hoursReq, hoursCap,
     advert, trade, merch, research, salesSalary, commission, mgmt, sellingOH, adminOH, prodOH,

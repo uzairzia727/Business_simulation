@@ -21,7 +21,7 @@ function context(t: Team, idx: number, teams: Team[]) {
       revenue: round(r.revenue), grossProfit: round(r.gross), netProfit: round(r.net), closingCash: round(r.cashShown - r.overdraft),
       netAssets: round(r.netAssets), sellingOverheads: round(r.sellingOH), adminOverheads: round(r.adminOH), overtimeHours: round(r.otHours),
       perProduct: [0, 1, 2].map((p) => ({ product: p + 1, demand: r.demandU[p], delivered: r.u[p], sold: r.soldU[p], unsold: r.unsold[p], lostSales: r.lostSales[p] })),
-      aiAgentsOn: r.agentsOn, aiAgentCost: r.agentCost,
+      aiAgentsOn: r.agentsOn, aiAgentCost: r.agentCost, regulatorNotices: r.notices, regulatorFines: round(r.fines),
     },
     history: t.history ?? [],
     economy: economyBrief(),

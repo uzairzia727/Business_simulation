@@ -2,6 +2,7 @@
 import Typewriter from "./Typewriter";
 import MarketingAgent from "./MarketingAgent";
 import HRPanel from "./HRPanel";
+import WhatIf from "./WhatIf";
 import { PolicyNotice } from "./Regulator";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -74,6 +75,7 @@ export default function DecisionForm({ idx }: { idx: number }) {
 
       <MarketingAgent t={t} idx={idx} apply={(d, plan) => { update({ d: { ...t.d, ...d }, channels: plan }); setMsg("Channel plan applied"); }} />
       <HRPanel t={t} idx={idx} update={(patch) => { update(patch); setMsg("HR updated"); }} />
+      <WhatIf teams={teams} idx={idx} t={t} econ={econ} apply={(d, label) => { update({ d, ...(/marketing/.test(label) ? { channels: null } : {}) }); setMsg(`Applied: ${label}`); }} />
 
       <section className="card mt-6">
         <div className="flex flex-wrap items-center justify-between gap-3">

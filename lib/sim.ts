@@ -251,7 +251,8 @@ function attractiveness(d: Num, pos: Position, g: number, p: number, ag?: Agents
   const reach = mix ? (g === 0 ? 0.85 + 0.6 * mix[p].exportShare : 1.05 - 0.2 * mix[p].exportShare) : 1;
   const price = Math.max(1, d[priceKey]) / BENCH[priceKey];
   const marketing = Math.max(0.05, b.goodwill * (1 + 0.15 * mg(hr, "mkt")) * reach);
-  const coverage = Math.max(0.1, (d[SALES_KEY[g]] * (on(ag, "ls") ? 1.15 : 1) * (1 + 0.12 * mg(hr, "sales"))) / BENCH[SALES_KEY[g]]);
+  // +2 smoothing: one extra salesperson in a small region helps, but does not double coverage.
+  const coverage = Math.max(0.1, (d[SALES_KEY[g]] * (on(ag, "ls") ? 1.15 : 1) * (1 + 0.12 * mg(hr, "sales")) + 2) / (BENCH[SALES_KEY[g]] + 2));
   const quality = (1 + 0.12 * b.improved) * Math.max(0.2, b.quality) ** 0.25;
   const credit = (Math.max(10, d.credit) / BENCH.credit) ** 0.1;
   const ai = (on(ag, "mi") ? 1.05 : 1) * (on(ag, "cs") ? 1.06 : 1) * (has(econ, "standards") && b.quality < QUALITY_STD ? 0.8 : 1);

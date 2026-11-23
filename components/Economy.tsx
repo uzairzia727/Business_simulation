@@ -1,6 +1,7 @@
 "use client";
 import { Econ, SCENARIOS, ScenarioId, Team, gbp } from "@/lib/sim";
 import Typewriter from "./Typewriter";
+import { INDUSTRIES, IndustryId, industryOf } from "@/lib/industry";
 
 const IDS = Object.keys(SCENARIOS) as ScenarioId[];
 const pct = (x: number, dp = 1) => `${(x * 100).toFixed(dp)}%`;
@@ -40,6 +41,17 @@ export default function Economy({ teams, econ, setEcon }: { teams: Team[]; econ:
           <p className="max-w-2xl text-sm text-mute">The organiser sets the economic scenario at the start of each quarter. It applies to all 8 companies and stays in place until changed.</p>
         </div>
         <button className="btn no-print" onClick={random}>Random scenario</button>
+      </div>
+
+      <div className="no-print mt-4 rounded-md border border-line bg-stone-50 p-3">
+        <label className="text-sm font-semibold" htmlFor="industry">Industry</label>
+        <div className="mt-1 flex flex-wrap items-center gap-3">
+          <select id="industry" className="input w-56" value={econ.industry ?? "manufacturing"}
+            onChange={(e) => { if (confirm(`Switch the whole game to ${INDUSTRIES[e.target.value as IndustryId].name}? Products, markets, the regulator and market behaviour change for all 8 companies. Best done at the start of a game.`)) setEcon({ ...econ, industry: e.target.value }); }}>
+            {(Object.keys(INDUSTRIES) as IndustryId[]).map((id) => <option key={id} value={id}>{INDUSTRIES[id].name}</option>)}
+          </select>
+          <p className="min-w-0 flex-1 text-sm text-mute">{industryOf(econ.industry).blurb} Products: {industryOf(econ.industry).products.join(", ")}. Regulator: {industryOf(econ.industry).regulator}.</p>
+        </div>
       </div>
 
       <div className="no-print mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5" role="radiogroup" aria-label="Economic scenario">

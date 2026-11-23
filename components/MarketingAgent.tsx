@@ -1,4 +1,5 @@
 "use client";
+import { useIndustry } from "@/lib/useIndustry";
 import { useState } from "react";
 import { ROLES, Team } from "@/lib/sim";
 import { CHANNELS, PlanRow, channelEff, channelMix, planToDecisions } from "@/lib/marketing";
@@ -11,6 +12,7 @@ const pct = (x: number) => `${Math.round(x * 100)}%`;
 // Marketing channels: plan spend by channel and product (by hand or with the AI marketing agent), then apply.
 // Each channel suits some products and markets better, and saturates when overspent.
 export default function MarketingAgent({ t, idx, apply }: { t: Team; idx: number; apply: (d: Record<string, string>, plan: PlanRow[]) => void }) {
+  const { t: w } = useIndustry();
   const [plan, setPlan] = useState<PlanRow[]>(() => CHANNELS.map((c) => t.channels?.find((r) => r.channel === c.id) ?? { channel: c.id, p1: 0, p2: 0, p3: 0, ad: "" }));
   const current = [1, 2, 3].reduce((s, p) => s + ["advert", "trade", "merch"].reduce((a, l) => a + (Number(t.d[`p${p}${l}`]) || 0), 0), 0);
   const [budget, setBudget] = useState(String(current || 90));
@@ -62,7 +64,7 @@ export default function MarketingAgent({ t, idx, apply }: { t: Team; idx: number
             {CHANNELS.map((c) => {
               const on = picked.includes(c.id);
               return <button key={c.id} type="button" aria-pressed={on} disabled={busy} title={c.note} onClick={() => setPicked(on ? picked.filter((x) => x !== c.id) : [...picked, c.id])}
-                className={`rounded-md border px-2.5 py-1 text-xs transition ${on ? "border-brand bg-brand text-white" : "border-line bg-white hover:bg-stone-50"}`}>{c.name}</button>;
+                className={`rounded-md border px-2.5 py-1 text-xs transition ${on ? "border-brand bg-brand text-white" : "border-line bg-white hover:bg-stone-50"}`}>{w(c.name)}</button>;
             })}
           </div>
         </fieldset>
@@ -77,15 +79,15 @@ export default function MarketingAgent({ t, idx, apply }: { t: Team; idx: number
 
       <div className="mt-3 overflow-x-auto">
         <table className="tbl">
-          <thead><tr><th>Channel</th><th>Best for</th><th>P1 (Rs 000)</th><th>P2</th><th>P3</th><th>Ad line</th></tr></thead>
+          <thead><tr><th>Channel</th><th>Best for</th><th>{w("P1")} (Rs 000)</th><th>{w("P2")}</th><th>{w("P3")}</th><th>Ad line</th></tr></thead>
           <tbody>
             {CHANNELS.map((c) => {
               const row = plan.find((r) => r.channel === c.id)!;
               const best = c.fit.map((f, p) => [f, p] as const).filter(([f]) => f >= 1.1).map(([, p]) => `P${p + 1}`);
               return (
                 <tr key={c.id}>
-                  <td className="!text-left"><span className="block font-medium">{c.name}</span><span className="block text-xs text-mute">{c.note}</span></td>
-                  <td className="!text-left text-xs">{best.join(", ") || "—"}{c.export >= 0.5 ? " · export" : c.export === 0 ? " · home only" : ""}</td>
+                  <td className="!text-left"><span className="block font-medium">{w(c.name)}</span><span className="block text-xs text-mute">{c.note}</span></td>
+                  <td className="!text-left text-xs">{best.map(w).join(", ") || "—"}{c.export >= 0.5 ? " · export" : c.export === 0 ? " · home only" : ""}</td>
                   {P.map((k, p) => (
                     <td key={k}>
                       <label className="sr-only" htmlFor={`ch-${c.id}-${k}`}>{c.name} Product {p + 1}</label>

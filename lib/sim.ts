@@ -1,3 +1,4 @@
+import { industryOf } from "./industry";
 import { channelMix, type PlanRow } from "./marketing";
 export type Group = "marketing" | "operations" | "finance" | "personnel" | "management";
 export type Field = [id: string, label: string, group: Group, benchmark: number];
@@ -171,7 +172,7 @@ const mg = (hr: HR | undefined, id: PositionId) => (hr?.managers?.[id]?.skill ??
 export const hrCost = (hr?: HR) => Object.values(hr?.managers ?? {}).reduce((s, m) => s + (m?.salary ?? 0), 0) + (hr?.severance ?? 0);
 
 // ---------- Economy: one scenario applies to the whole market each quarter ----------
-export type Econ = { scenario: ScenarioId; gdp: number; policies?: PolicyId[] };
+export type Econ = { scenario: ScenarioId; gdp: number; policies?: PolicyId[]; industry?: string };
 export const SCENARIOS = {
   normal: { name: "Stable economy", desc: "Steady growth, normal prices and interest.", demand: 1, elasticity: 2.5, materials: 1, wages: 1, rate: 0.05, growth: 0.005, inflation: 0.02, unemployment: 0.05 },
   boom: { name: "Boom", desc: "Customers spend more; all markets grow. Rates edge up.", demand: 1.15, elasticity: 2.2, materials: 1.03, wages: 1.02, rate: 0.06, growth: 0.015, inflation: 0.035, unemployment: 0.04 },
@@ -269,7 +270,10 @@ function available(d: Num, pos: Position): Grid {
 }
 
 export function market(all: { d: Values; pos?: Position; agents?: Agents; hr?: HR; channels?: PlanRow[] | null }[], econ?: Econ) {
-  const e = sc(econ);
+  const e = sc(econ), ind = industryOf(econ?.industry);
+  // Industry economics: price sensitivity, how much booms/recessions move demand, and sensitivity to interest rates.
+  const elasticity = e.elasticity * ind.elasticity;
+  const demandMult = Math.max(0.3, (1 + (e.demand - 1) * ind.cyclical) * (1 - ind.rateSens * Math.max(0, e.rate - 0.05)));
   const ds = all.map((t) => regulate(toNum(t.d), econ));
   const mixes = all.map((t) => channelMix(t.channels));
   const ps = all.map((t) => t.pos ?? initialPosition());
@@ -278,12 +282,12 @@ export function market(all: { d: Values; pos?: Position; agents?: Agents; hr?: H
   const sold: Grid[] = ds.map(() => REGION_ROWS.map(() => [0, 0, 0]));
   const avail = ds.map((d, i) => available(d, ps[i]));
   REGION_ROWS.forEach((_, g) => [0, 1, 2].forEach((p) => {
-    const at = ds.map((d, i) => attractiveness(d, ps[i], g, p, all[i].agents, e.elasticity, econ, all[i].hr, mixes[i]));
+    const at = ds.map((d, i) => attractiveness(d, ps[i], g, p, all[i].agents, elasticity, econ, all[i].hr, mixes[i]));
     const sumA = at.reduce((s, x) => s + x.a, 0) || 1;
     const avgPrice = at.reduce((s, x) => s + x.price, 0) / k;
     const avgMkt = at.reduce((s, x) => s + x.marketing, 0) / k;
     // Total market grows when the industry is cheaper or markets harder.
-    const size = BASE_QTY[g][p] * k * e.demand * avgPrice ** -1.2 * avgMkt ** 0.15;
+    const size = BASE_QTY[g][p] * k * demandMult * avgPrice ** -1.2 * avgMkt ** 0.15;
     ds.forEach((_, i) => {
       const dem = Math.round((size * at[i].a) / sumA);
       demand[i][g][p] = dem;

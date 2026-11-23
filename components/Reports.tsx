@@ -1,4 +1,5 @@
 "use client";
+import { useIndustry } from "@/lib/useIndustry";
 import Typewriter from "./Typewriter";
 import { CHANNELS } from "@/lib/marketing";
 import Economy from "./Economy";
@@ -12,18 +13,20 @@ import Competitors from "./Competitors";
 
 type Cell = string | number;
 function Table({ head, rows }: { head: string[]; rows: Cell[][] }) {
+  const { t } = useIndustry();
   return (
     <div className="overflow-x-auto">
       <table className="tbl">
-        <thead><tr>{head.map((h) => <th key={h}>{h}</th>)}</tr></thead>
-        <tbody>{rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j}>{c}</td>)}</tr>)}</tbody>
+        <thead><tr>{head.map((h) => <th key={h}>{t(h)}</th>)}</tr></thead>
+        <tbody>{rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j}>{j === 0 && typeof c === "string" ? t(c) : c}</td>)}</tr>)}</tbody>
       </table>
     </div>
   );
 }
-const Block = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="card"><h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-brand-dark">{title}</h3>{children}</section>
-);
+function Block({ title, children }: { title: string; children: React.ReactNode }) {
+  const { t } = useIndustry();
+  return <section className="card"><h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-brand-dark">{t(title)}</h3>{children}</section>;
+}
 
 export default function Reports() {
   const router = useRouter();

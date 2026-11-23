@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { closeHR } from "./hr";
+import { industryOf } from "./industry";
 import { ROLES, TEAMS, Team, emptyTeam, autofill, calculateAll, agentImpact, ksfAll, Econ, DEFAULT_ECON, SCENARIOS, POLICIES } from "./sim";
 
 const KEY = "strataSimTeamsV3";
@@ -72,14 +73,14 @@ export function useTeams() {
     // The economy grows (or shrinks) by the scenario's rate; the scenario stays until changed.
     const nextEcon = { ...e, gdp: Math.round(e.gdp * (1 + SCENARIOS[e.scenario].growth) * 10) / 10 };
     setEconState(nextEcon);
-    try { localStorage.setItem(ECON_KEY, JSON.stringify(nextEcon)); } catch {}
+    try { localStorage.setItem(ECON_KEY, JSON.stringify(nextEcon)); window.dispatchEvent(new Event("strata-econ")); } catch {}
     return generateAll(next, nextEcon);
   }, [generateAll]);
 
   // Change the economic scenario; by default every company's results are recalculated under it.
   function setEcon(e: Econ, recalc = true) {
     setEconState(e);
-    try { localStorage.setItem(ECON_KEY, JSON.stringify(e)); } catch {}
+    try { localStorage.setItem(ECON_KEY, JSON.stringify(e)); window.dispatchEvent(new Event("strata-econ")); } catch {}
     if (recalc) { try { const t = JSON.parse(localStorage.getItem(KEY) || "null"); if (Array.isArray(t)) generateAll(t, e); } catch {} }
   }
 
@@ -138,7 +139,8 @@ function competitorBrief(teams: Team[], i: number) {
 // Plain summary of the economy for the AI agents.
 export function economyBrief() {
   const e = loadEcon(), s = SCENARIOS[e.scenario];
-  return { scenario: s.name, meaning: s.desc, gdpIndex: e.gdp, interestRate: `${s.rate * 100}%`, inflation: `${s.inflation * 100}%`, demandVsNormal: `${Math.round((s.demand - 1) * 100)}%`,
+  const ind = industryOf(e.industry);
+  return { industry: ind.name, products: ind.products, markets: ind.regions, regulator: ind.regulator, scenario: s.name, meaning: s.desc, gdpIndex: e.gdp, interestRate: `${s.rate * 100}%`, inflation: `${s.inflation * 100}%`, demandVsNormal: `${Math.round((s.demand - 1) * 100)}%`,
     regulatorPoliciesInForce: (e.policies ?? []).map((p) => `${POLICIES[p].name}: ${POLICIES[p].rule}`) };
 }
 

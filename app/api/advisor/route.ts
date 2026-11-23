@@ -17,6 +17,8 @@ Rules:
   together with the regulator policies in force (and any fines or notices in the report).
 - keySuccessFactors scores the company 0-100 against its 7 rivals on research, scale, quality control, asset use,
   labour productivity, market share and return on assets. Use it to name strengths and weaknesses.
+- economy.industry names the sector; call products and markets by their industry names (economy.products, economy.markets
+  map to Product 1-3 and Export, South, West, North), and the regulator by its name.
 - If something cannot be answered from the data, say so.
 - Format: plain text only. No Markdown: no tables, no ** or #. Use short lines starting with "- " for lists. Keep answers under 180 words.`;
 

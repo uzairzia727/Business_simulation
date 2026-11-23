@@ -1,4 +1,5 @@
 "use client";
+import { useIndustry } from "@/lib/useIndustry";
 import Typewriter from "./Typewriter";
 import MarketingAgent from "./MarketingAgent";
 import HRPanel from "./HRPanel";
@@ -19,6 +20,7 @@ export default function DecisionForm({ idx }: { idx: number }) {
   const [msg, setMsg] = useState("");
   const [showErr, setShowErr] = useState(false);
   const role = ROLES[idx];
+  const { t: w } = useIndustry();
   // A team that has never been touched starts pre-filled from its strategist role.
   const t = ready && !teams[idx].touched ? autofill(teams[idx], idx) : teams[idx];
 
@@ -119,7 +121,7 @@ export default function DecisionForm({ idx }: { idx: number }) {
             <h2 className="font-semibold">{GROUP_TITLES[g]}</h2>
             <div className={`mt-4 grid gap-x-4 gap-y-3 sm:grid-cols-2 ${g === "marketing" ? "lg:grid-cols-3" : ""}`}>
               {fs.map(([id, label]) => (
-                <label key={id} className="text-sm text-slate-700">{label}
+                <label key={id} className="text-sm text-slate-700">{w(label)}
                   <input type="number" step="any" inputMode="decimal" className={`input mt-1 ${bad(id) ? "border-red-500 bg-red-50" : ""}`}
                     value={t.d[id] ?? ""} onChange={(e) => setD(id, e.target.value)} aria-invalid={bad(id) || undefined} />
                 </label>
@@ -131,12 +133,12 @@ export default function DecisionForm({ idx }: { idx: number }) {
           <h2 className="font-semibold">Distribution — units delivered</h2>
           <div className="mt-4 overflow-x-auto">
             <table className="tbl">
-              <thead><tr><th>Region</th><th>Product 1</th><th>Product 2</th><th>Product 3</th></tr></thead>
+              <thead><tr><th>Region</th><th>{w("Product 1")}</th><th>{w("Product 2")}</th><th>{w("Product 3")}</th></tr></thead>
               <tbody>
                 {REGION_ROWS.map((r) => (
-                  <tr key={r[0]}><td className="font-medium">{r[0]}</td>
+                  <tr key={r[0]}><td className="font-medium">{w(r[0])}</td>
                     {r.slice(1).map((id, k) => (
-                      <td key={id}><input type="number" inputMode="numeric" aria-label={`${r[0]} product ${k + 1}`}
+                      <td key={id}><input type="number" inputMode="numeric" aria-label={`${w(r[0])} ${w(`Product ${k + 1}`)}`}
                         className={`input ml-auto max-w-32 text-right ${bad(id) ? "border-red-500 bg-red-50" : ""}`} value={t.d[id] ?? ""} onChange={(e) => setD(id, e.target.value)} /></td>
                     ))}
                   </tr>

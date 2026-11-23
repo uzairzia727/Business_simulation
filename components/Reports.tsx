@@ -4,7 +4,7 @@ import Economy from "./Economy";
 import Regulator from "./Regulator";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { DEFAULT_ECON, OPEN, REGION_ROWS, ROLES, Report, Team, fmt, gbp } from "@/lib/sim";
+import { DEFAULT_ECON, KSF, OPEN, REGION_ROWS, ROLES, Report, Team, fmt, gbp } from "@/lib/sim";
 import { useTeams } from "@/lib/store";
 import RoleIcon, { ROLE_BAR } from "./RoleIcon";
 import Competitors from "./Competitors";
@@ -64,7 +64,7 @@ export default function Reports() {
         <h2 className="mb-3 font-semibold">Ranking — total profit across all quarters</h2>
         <div className="overflow-x-auto">
           <table className="tbl">
-            <thead><tr><th>Rank</th><th>Company</th><th>Revenue</th><th>Net profit (this quarter)</th><th>Total profit</th><th>Market share</th><th>Closing cash</th></tr></thead>
+            <thead><tr><th>Rank</th><th>Company</th><th>Revenue</th><th>Net profit (this quarter)</th><th>Total profit</th><th>Market share</th><th>KSF score</th><th>Closing cash</th></tr></thead>
             <tbody>
               {league.map(({ i, r: x, total: tot }, k) => (
                 <tr key={i} onClick={() => pick(i)} className={`cursor-pointer hover:bg-stone-50`}>
@@ -74,6 +74,7 @@ export default function Reports() {
                   <td>{gbp(x.revenue)}</td><td className={x.net < 0 ? "text-red-700" : ""}>{gbp(x.net)}</td>
                   <td className={`font-semibold ${tot < 0 ? "text-red-700" : "text-emerald-700"}`}>{gbp(tot)}</td>
                   <td>{((x.soldU.reduce((a, b) => a + b, 0) / totalSold) * 100).toFixed(1)}%</td>
+                  <td>{teams[i].ksf?.overall ?? "—"}</td>
                   <td>{gbp(x.cashShown - x.overdraft)}</td>
                 </tr>
               ))}
@@ -132,10 +133,11 @@ export function TeamReport({ t, idx, controls }: { t: Team; idx: number; control
             ["Assembly time (mins)", d.p1time, d.p2time, d.p3time], ["Units delivered", ...r.u.map(fmt)]]} />
         </Block>
         <AiBlock t={t} />
+        <KsfBlock t={t} />
         <Block title="Performance by quarter">
-          <Table head={["Quarter", "Revenue", "Net profit", "Closing cash", "Market share"]} rows={[
-            ...(t.history ?? []).map((h) => [h.label, gbp(h.revenue), gbp(h.net), gbp(h.cash), `${(h.share * 100).toFixed(1)}%`]),
-            [`Y${t.year} Q${t.quarter} (current)`, gbp(r.revenue), gbp(r.net), gbp(r.cashShown - r.overdraft), "—"]]} />
+          <Table head={["Quarter", "Economy", "Revenue", "Net profit", "Closing cash", "Market share", "KSF score"]} rows={[
+            ...(t.history ?? []).map((h) => [h.label, h.scenario ?? "—", gbp(h.revenue), gbp(h.net), gbp(h.cash), `${(h.share * 100).toFixed(1)}%`, h.ksf ?? "—"]),
+            [`Y${t.year} Q${t.quarter} (current)`, r.econ?.name ?? "—", gbp(r.revenue), gbp(r.net), gbp(r.cashShown - r.overdraft), "—", t.ksf?.overall ?? "—"]]} />
         </Block>
         <Block title="Market performance">
           <Table head={["Measure", "Product 1", "Product 2", "Product 3"]} rows={[
@@ -216,6 +218,43 @@ function insight(r: Report) {
 }
 
 // With vs without AI agents: same quarter, same rivals, only this company's agents switched off.
+// Key success factors: how this company compares with the other seven on each factor (0 = weakest, 100 = strongest).
+function KsfBlock({ t }: { t: Team }) {
+  if (!t.ksf) return null;
+  const val = (id: string, v: number) => id === "quality" ? v.toFixed(2) : id === "scale" ? gbp(v) : id === "labour" ? fmt(Math.round(v)) : `${v.toFixed(1)}%`;
+  const best = [...t.ksf.items].sort((a, b) => b.score - a.score)[0], worst = [...t.ksf.items].sort((a, b) => a.score - b.score)[0];
+  const name = (id: string) => KSF.find((k) => k.id === id)!.name.toLowerCase();
+  return (
+    <Block title={`Key success factors: overall ${t.ksf.overall} / 100`}>
+      <div className="overflow-x-auto">
+        <table className="tbl">
+          <thead><tr><th>Factor</th><th>Measure</th><th>Value</th><th>Rank of 8</th><th className="w-40">Score</th></tr></thead>
+          <tbody>
+            {KSF.map((k, j) => {
+              const it = t.ksf!.items[j];
+              return (
+                <tr key={k.id}>
+                  <td className="!text-left"><span className="block text-xs text-mute">{k.group}</span><span className="font-medium">{k.name}</span></td>
+                  <td className="!text-left text-xs text-mute">{k.unit}</td>
+                  <td>{val(k.id, it.value)}</td>
+                  <td>{it.rank}</td>
+                  <td>
+                    <span className="flex items-center justify-end gap-2">
+                      <span className="h-2 w-24 rounded-sm bg-stone-100" aria-hidden="true"><span className="block h-full rounded-sm bg-brand" style={{ width: `${Math.max(3, it.score)}%` }} /></span>
+                      <span className="w-8 tabular-nums">{it.score}</span>
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-3 text-sm text-mute">Strongest factor: {name(best.id)} (rank {best.rank}). Weakest: {name(worst.id)} (rank {worst.rank}). Scores compare this company with the other seven in the same quarter.</p>
+    </Block>
+  );
+}
+
 function AiBlock({ t }: { t: Team }) {
   const r = t.report!, ai = t.ai;
   if (!ai) return (

@@ -2,7 +2,7 @@
 import Typewriter, { RobotWriting } from "./Typewriter";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { ROLES, Team } from "@/lib/sim";
+import { KSF, ROLES, Team } from "@/lib/sim";
 import { economyBrief, loadTeams } from "@/lib/store";
 
 // Strip leftover Markdown symbols the model sometimes adds.
@@ -25,6 +25,7 @@ function context(t: Team, idx: number, teams: Team[]) {
     },
     history: t.history ?? [],
     economy: economyBrief(),
+    keySuccessFactors: t.ksf ? { overallScore: t.ksf.overall, factors: KSF.map((k, j) => ({ factor: k.name, measure: k.unit, value: Math.round(t.ksf!.items[j].value * 100) / 100, rankOf8: t.ksf!.items[j].rank, score: t.ksf!.items[j].score })) } : null,
     rivals: teams.map((x, i) => x.report && i !== idx ? { company: `Team ${i + 1}`, strategy: ROLES[i].name, revenue: round(x.report.revenue), netProfit: round(x.report.net), unitsSold: x.report.soldU.reduce((a, b) => a + b, 0) } : null).filter(Boolean),
   };
 }
@@ -38,7 +39,7 @@ function leagueContext(teams: Team[]) {
       revenue: Math.round(x.report.revenue), netProfit: Math.round(x.report.net),
       totalProfit: Math.round((x.history ?? []).reduce((s, h) => s + h.net, 0) + x.report.net),
       unitsSold: x.report.soldU.reduce((a, b) => a + b, 0), unsold: x.report.unsold.reduce((a, b) => a + b, 0),
-      lostSales: x.report.lostSales.reduce((a, b) => a + b, 0), cash: Math.round(x.report.cashShown - x.report.overdraft), aiAgentsOn: x.report.agentsOn,
+      lostSales: x.report.lostSales.reduce((a, b) => a + b, 0), cash: Math.round(x.report.cashShown - x.report.overdraft), aiAgentsOn: x.report.agentsOn, ksfScore: x.ksf?.overall,
     } : { company: `Team ${i + 1}`, strategy: ROLES[i].name, note: "no report yet" }),
   };
 }

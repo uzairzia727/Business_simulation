@@ -116,8 +116,8 @@ export function roleData(i: number): Values {
 }
 
 export type Meta = { year: string; quarter: string; simCode: string; groupNo: string };
-export type QuarterSummary = { label: string; revenue: number; net: number; cash: number; share: number; scenario?: string };
-export type Team = Meta & { d: Values; report: Report | null; touched?: boolean; agents?: Agents; aiRun?: boolean; aiNote?: string; ai?: ReturnType<typeof agentImpact>; pos?: Position; history?: QuarterSummary[] };
+export type QuarterSummary = { label: string; revenue: number; net: number; cash: number; share: number; scenario?: string; ksf?: number };
+export type Team = Meta & { d: Values; report: Report | null; touched?: boolean; agents?: Agents; aiRun?: boolean; aiNote?: string; ai?: ReturnType<typeof agentImpact>; ksf?: { items: KsfScore[]; overall: number }; pos?: Position; history?: QuarterSummary[] };
 
 export const isBlank = (v: unknown) => v === null || v === undefined || String(v).trim() === "";
 const n = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : 0);
@@ -411,3 +411,41 @@ export function calculate(raw: Values, quarter: string | number = 1, soldIn?: Gr
 
 export const fmt = (x: number) => Number(x || 0).toLocaleString("en-GB", { maximumFractionDigits: 2 });
 export const gbp = (x: number) => { const v = Math.round(x || 0); return (v < 0 ? "−Rs " : "Rs ") + Math.abs(v).toLocaleString("en-PK"); };
+
+// ---------- Key success factors: each company is scored 0–100 against the other seven every quarter ----------
+export const KSF = [
+  { id: "research", group: "Technology", name: "Research expertise", unit: "R&D as % of revenue", lower: false },
+  { id: "scale", group: "Manufacturing", name: "Economies of scale & learning curve", unit: "Production cost per standard unit (Rs)", lower: true },
+  { id: "quality", group: "Manufacturing", name: "Quality control know-how", unit: "Quality index (1.00 = standard)", lower: false },
+  { id: "assets", group: "Manufacturing", name: "Utilisation of fixed assets", unit: "Machine hours used, % of available", lower: false },
+  { id: "labour", group: "Manufacturing", name: "Labour productivity", unit: "Standard units per worker", lower: false },
+  { id: "share", group: "Marketing", name: "Market share", unit: "% of units sold in the industry", lower: false },
+  { id: "return", group: "Finance", name: "Return on net assets", unit: "Net profit, % of net assets", lower: false },
+] as const;
+export type KsfScore = { id: string; value: number; score: number; rank: number };
+
+export function ksfAll(rs: Report[]): { items: KsfScore[]; overall: number }[] {
+  const totalSold = rs.reduce((s, r) => s + r.soldU.reduce((a, b) => a + b, 0), 0) || 1;
+  const std = (r: Report) => r.u[0] * OPEN.bom[0] + r.u[1] * OPEN.bom[1] + r.u[2] * OPEN.bom[2];
+  const raw: Record<string, (r: Report) => number> = {
+    research: (r) => (r.research / (r.revenue || 1)) * 100,
+    scale: (r) => r.productionCost / (std(r) || 1),
+    quality: (r) => r.close.quality.reduce((s, q, p) => s + q * (1 + 0.12 * r.close.improved[p]), 0) / 3,
+    assets: (r) => Math.min(100, (r.mNeed / (r.mAvail || 1)) * 100),
+    labour: (r) => std(r) / (r.workers || 1),
+    share: (r) => (r.soldU.reduce((a, b) => a + b, 0) / totalSold) * 100,
+    return: (r) => (r.net / (r.netAssets || 1)) * 100,
+  };
+  const cols = KSF.map((k) => {
+    const v = rs.map(raw[k.id]);
+    const lo = Math.min(...v), hi = Math.max(...v);
+    return v.map((x) => {
+      const pos = hi === lo ? 0.5 : (x - lo) / (hi - lo);
+      return { id: k.id, value: x, score: Math.round((k.lower ? 1 - pos : pos) * 100), rank: 1 + v.filter((y) => (k.lower ? y < x : y > x)).length };
+    });
+  });
+  return rs.map((_, i) => {
+    const items = cols.map((c) => c[i]);
+    return { items, overall: Math.round(items.reduce((s, x) => s + x.score, 0) / items.length) };
+  });
+}

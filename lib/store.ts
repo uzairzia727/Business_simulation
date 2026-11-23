@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { ROLES, TEAMS, Team, emptyTeam, autofill, calculateAll, agentImpact, Econ, DEFAULT_ECON, SCENARIOS, POLICIES } from "./sim";
+import { ROLES, TEAMS, Team, emptyTeam, autofill, calculateAll, agentImpact, ksfAll, Econ, DEFAULT_ECON, SCENARIOS, POLICIES } from "./sim";
 
 const KEY = "strataSimTeamsV3";
 const ECON_KEY = "strataSimEconomy";
@@ -40,7 +40,8 @@ export function useTeams() {
   const generateAll = useCallback((base: Team[], e: Econ = loadEcon()) => {
     const filled = base.map((t, i) => autofill(t, i));
     const reports = calculateAll(filled, e);
-    const next = filled.map((t, i) => ({ ...t, report: reports[i], ai: agentImpact(filled, i, e) }));
+    const ksf = ksfAll(reports);
+    const next = filled.map((t, i) => ({ ...t, report: reports[i], ai: agentImpact(filled, i, e), ksf: ksf[i] }));
     save(next);
     return next;
   }, [save]);
@@ -59,7 +60,7 @@ export function useTeams() {
         pos: r.close,
         history: [...(t.history ?? []), {
           label: `Y${y} Q${q}`, revenue: r.revenue, net: r.net, cash: r.cashShown - r.overdraft,
-          share: r.soldU.reduce((a, b) => a + b, 0) / totalSold, scenario: SCENARIOS[e.scenario].name,
+          share: r.soldU.reduce((a, b) => a + b, 0) / totalSold, scenario: SCENARIOS[e.scenario].name, ksf: t.ksf?.overall,
         }],
         quarter: String(q === 4 ? 1 : q + 1),
         year: String(q === 4 ? y + 1 : y),
@@ -122,7 +123,7 @@ function competitorBrief(teams: Team[], i: number) {
     economy: economyBrief(),
     results: {
       quarter: `Y${t.year} Q${t.quarter}`, revenue: round(r.revenue), netProfit: round(r.net), cash: round(r.cashShown - r.overdraft),
-      overtimeHours: round(r.otHours), regulatorNotices: r.notices, perProduct: [0, 1, 2].map((p) => ({ product: p + 1, demand: r.demandU[p], delivered: r.u[p], sold: r.soldU[p], unsold: r.unsold[p], lostSales: r.lostSales[p] })),
+      overtimeHours: round(r.otHours), regulatorNotices: r.notices, ksfScore: t.ksf?.overall, perProduct: [0, 1, 2].map((p) => ({ product: p + 1, demand: r.demandU[p], delivered: r.u[p], sold: r.soldU[p], unsold: r.unsold[p], lostSales: r.lostSales[p] })),
       history: t.history ?? [],
     },
     market: teams.map((x, k) => k === i || !x.report ? null : {

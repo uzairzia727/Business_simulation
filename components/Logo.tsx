@@ -19,15 +19,16 @@ export function LogoMark({ className = "size-9" }: { className?: string }) {
   );
 }
 
-export default function Logo({ dark = true }: { dark?: boolean }) {
+// caption: the small line under the name (e.g. the industry); defaults to the product tagline.
+export default function Logo({ dark = true, caption = "Strategy simulation" }: { dark?: boolean; caption?: string }) {
   return (
     <span className="flex items-center gap-2.5">
       <LogoMark />
-      <span className="leading-tight">
-        <span className={`block text-lg font-extrabold tracking-tight ${dark ? "text-white" : "text-brand-dark"}`}>
+      <span className="min-w-0 leading-tight">
+        <span className={`block font-serif text-lg font-semibold ${dark ? "text-white" : "text-brand-dark"}`}>
           Strata<span className="text-[#a9c8b8]">Sim</span>
         </span>
-        <span className={`block text-[10px] font-semibold uppercase tracking-[.18em] ${dark ? "text-stone-400" : "text-mute"}`}>Business Strategy Simulation</span>
+        <span className={`block truncate whitespace-nowrap text-xs ${dark ? "text-stone-400" : "text-mute"}`}>{caption}</span>
       </span>
     </span>
   );

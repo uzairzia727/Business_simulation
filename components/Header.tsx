@@ -89,10 +89,9 @@ export default function Header() {
       <aside id="sidebar" aria-label="Sidebar"
         className={`no-print fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-brand-dark transition-transform duration-200 lg:w-64 lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex min-h-16 items-center justify-between border-b border-white/10 px-4">
-          <Link href="/" aria-label="StrataSim home"><Logo /></Link>
+          <Link href="/" aria-label="StrataSim home"><Logo caption={`${ind.name} · Strategy simulation`} /></Link>
           <button type="button" className="grid size-10 place-items-center rounded-md text-white hover:bg-white/10 lg:hidden" aria-label="Close menu" onClick={() => setOpen(false)}>✕</button>
         </div>
-        <p className="mx-6 mt-4 rounded bg-white/5 px-2 py-1 text-xs text-stone-400">{ind.name} simulation</p>
         {nav}
       </aside>
     </>

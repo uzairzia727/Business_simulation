@@ -1,3 +1,4 @@
+import { LogoMark } from "@/components/Logo";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Link from "next/link";
@@ -21,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main id="main" className="flex-1">{children}</main>
         <footer className="bg-ink pb-24 pt-8 text-sm text-slate-300">
           <div className="wrap flex flex-wrap justify-between gap-4">
-            <p>StrataSim — business strategy simulation for 8 companies.</p>
+            <p className="flex items-center gap-2"><LogoMark className="size-6" /> StrataSim — business strategy simulation for 8 companies.</p>
             <nav className="flex gap-4">
               <Link className="hover:text-white" href="/guide">Guide</Link>
               <Link className="hover:text-white" href="/team/1">Decisions</Link>

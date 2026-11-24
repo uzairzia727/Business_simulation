@@ -86,7 +86,7 @@ export default function Header() {
       </div>
       {open && <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" aria-hidden="true" onClick={() => setOpen(false)} />}
 
-      <aside id="sidebar" aria-label="Sidebar"
+      <aside id="sidebar" aria-label="Sidebar" data-open={open}
         className={`no-print fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-brand-dark transition-transform duration-200 lg:w-64 lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex min-h-16 items-center justify-between border-b border-white/10 px-4">
           <Link href="/" aria-label="StrataSim home"><Logo caption={`${ind.name} · Strategy simulation`} /></Link>

@@ -53,3 +53,9 @@ h1, h2 { font-family: var(--font-serif-head), Georgia, serif; font-weight: 600; 
 @keyframes scan { to { transform: translateX(100%); } }
 @media (prefers-reduced-motion: reduce) { .type-cursor, .robot-bob, .type-dots i, .scan-line::after { animation: none; } .type-cursor-done { opacity: 0; } }
 @media print { .type-cursor { display: none; } }
+
+/* Closed phone/tablet drawer: hide it with long-supported CSS (outside Tailwind layers), so it can never
+   cover the page in browsers without the newer `translate` property, e.g. on scaled laptop screens. */
+@media (max-width: 1023.98px) {
+  #sidebar:not([data-open="true"]) { visibility: hidden; pointer-events: none; transform: translateX(-100%); }
+}
